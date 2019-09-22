@@ -6,11 +6,13 @@ from PyQt5.QtCore import *
 MIN_FOR_CLOSE = 100
 
 class DropArea(QLabel):
+    #INITIALIZE SIGNALS
     imageLoaded = pyqtSignal(bool)
     tabDeleted = pyqtSignal(QWidget)
     tabAdded = pyqtSignal(QWidget, int)
+    tabReordered = pyqtSignal(QWidget, int)
     
-    def __init__(self, tabNumber, driver, minWidth, minHeight, aspectRatio):
+    def __init__(self, tabNumber, driver, minWidth, minHeight, aspectRatio, imageFolder):
         super().__init__()
 
         # CONNECT EVENTS (MOUSE/SLOTS & SIGNALS)
@@ -25,16 +27,17 @@ class DropArea(QLabel):
         self.aspectRatio = aspectRatio
         self.minWidth = minWidth
         self.minHeight = minHeight
+        self.imageFolder = imageFolder
         self.driver = driver
 
         self.setMinimumSize(self.minWidth, self.minHeight)
-        self.setFrameStyle(QFrame.Plain | QFrame.Panel)
+        self.setFrameStyle(QFrame.Plain)
         self.setAlignment(Qt.AlignCenter)
         self.setAcceptDrops(True)
         self.setAutoFillBackground(True)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.setMouseTracking(True)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.setCursor(Qt.PointingHandCursor)
+        self.setMouseTracking(True)
 
         self.tabNumber = tabNumber
         self.clear()
@@ -48,12 +51,26 @@ class DropArea(QLabel):
     #IF DRAG UP REMOVE TAB, IF CLICK OPEN URL
     def areaReleased(self, event):   
         self.endClick = event.pos()
-        diff = abs(self.endClick.y() - self.startClick.y())
+        xDiff = self.endClick.x() - self.startClick.x()
+        yDiff = abs(self.endClick.y() - self.startClick.y())
 
-        if diff > MIN_FOR_CLOSE:
-            self.tabDeleted.emit(self)
+        if yDiff > MIN_FOR_CLOSE or abs(xDiff) > self.sizeHint().width():
+            if yDiff > MIN_FOR_CLOSE:
+                self.tabDeleted.emit(self)
+            elif abs(xDiff) > self.sizeHint().width():
+                index = (self.tabNumber-1) % 3
+                #GET TABS TO MOVE E.G. -1 (1 LEFT) OR 2 (2 RIGHT)
+                tabsToSwap = (int)(xDiff/self.sizeHint().width())
+                left = True if (xDiff < 0) else False
+                #GET PARENT WIDGET AND MOVE TAB
+                parent = self.parent().layout().itemAt(0)
+                parent.removeWidget(self)
+                parent.insertWidget(index + tabsToSwap, self)
+                
+                #EMIT SIGNAL SO LIST CAN BE REORGANIZED AND CHAGNES SAVED TO FILE
+                self.tabReordered.emit(self, tabsToSwap)
         else: 
-            if self.taken: QDesktopServices.openUrl(self.url)
+            if self.taken: QDesktopServices.openUrl(QUrl(self.url))
 
     #SET TEXT TO DROP AND CHANGE COLOR
     def dragEnterEvent(self, event):
@@ -105,16 +122,16 @@ class DropArea(QLabel):
         self.url = url
         self.tabAdded.emit(self, self.tabNumber)
         self.imagePath = imagePath
-        self._pixmap = QPixmap(imagePath).scaled(self.sizeHint(), Qt.KeepAspectRatio)
+        self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath)).scaled(self.sizeHint(), Qt.KeepAspectRatio)
         self.setPixmap(self._pixmap)
         if addTabAfter: self.imageLoaded.emit(False)
 
     #DOWNLOAD IMAGE FROM DRIVER
     def downloadImage(self):
+        self.imagePath = str(self.url).replace('/', '') + '.png'
         self.driver.get(self.url)
-        self.imagePath = str(self.tabNumber) + '.png'
-        self.driver.save_screenshot(self.imagePath)
-        self._pixmap = QPixmap(os.getcwd() + '/' + self.imagePath, '1')
+        self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
+        self._pixmap = QPixmap(os.path.join(self.imageFolder, self.imagePath), '1')
         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
         self.imageLoaded.emit(False)
     

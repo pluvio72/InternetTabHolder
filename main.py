@@ -9,24 +9,36 @@ from selenium.webdriver.chrome.options import Options
 
 IMAGE_WIDTH = 1920
 IMAGE_HEIGHT = 1080
-
-ASPECT_RATIO = (float)(1080/1920)
-
+ASPECT_RATIO = (float)(IMAGE_HEIGHT/IMAGE_WIDTH)
 MIN_TAB_WIDTH = 360
 MIN_TAB_HEIGHT = (int)(MIN_TAB_WIDTH*ASPECT_RATIO)
+
+ABSOLUTE_IMAGE_FOLDER_PATH = os.path.join(os.getcwd(), 'thumbnails')
+IMAGE_FOLDER_PATH = 'thumbnails'
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
         ###
+        ### MAKE CHECK WHEN REORDERING TABS IF ITS FIRST ELEMENT IN ROW
+        ### RETHINK WHETHER YOU HAVE EMPTY TAB AS DROP AREA OR WHOLE WINDOW AS DROP AREA
+        ### MAKE FILE WITH CONSTANTS???
+        ### WHEN DELETING TAB RENAME THE IMAGE FOR IT AS THE URL IN CASE TO OPEN AGAIN
+        #### WHEN CLICKING EMPTY TAB SHOW PREVIOUSLY DELETED IN DIALOG
+        ### AFTER FIRST FULL ROW DONT LET THE NEW TAB SPAN WHOLE ROW
+        ### FIX SPACING BETWEEN ROWS WHEN GETTING SMALLER WINDOW
         ### CHANGE TABS PER ROW ON RESIZE???
         ### INSTEAD OF + 100 IN THE SETMINSIZE TRY TO FIND CONTENT MARGIN
         ### SET DROP AREA IMAGE PATH SO IT CAN BE ACCESSED WHEN RESIZING OR RELOADING ETC.
         ### FAVOURITE TABS HIGHER
         #### SUPPORT MULTIPLE OTHER DATA TYPES E.G. PDF OPENS IN PDF VIEWER
-        ### REORDER TABS
+        ### REORDER TABS VERTICALLY????
+        ### DONT HARDCODE WINDOW SIZE
         ###
+
+        #SETUP THUMBNAIL FOLDER 
+        if not (os.path.isdir(ABSOLUTE_IMAGE_FOLDER_PATH)): os.mkdir(ABSOLUTE_IMAGE_FOLDER_PATH)
 
         self.tabCount = 0
         self.tabRows = []
@@ -57,6 +69,17 @@ class MainWindow(QWidget):
         self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.scroll.setFrameStyle(QFrame.NoFrame)
 
+        self.scrollWidgetLayout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self.scrollWidgetLayout.setSpacing(3)
+
+        self.mainLayout.setContentsMargins(0, 0, 0, 0)
+        self.scrollWidgetLayout.setContentsMargins(0, 6, 0, 0)
+
+        print('Main Layout Margins: ', self.mainLayout.getContentsMargins())
+        print('Scroll Margins: ', self.scroll.getContentsMargins())
+        print('Scroll Widget Margins: ', self.scrollWidget.getContentsMargins())
+        print('Scroll Widget Layout Margins: ', self.scrollWidgetLayout.getContentsMargins())
+
         self.scrollWidget.setLayout(self.scrollWidgetLayout)
         self.scroll.setWidget(self.scrollWidget)
         self.mainLayout.addWidget(self.scroll)
@@ -64,10 +87,10 @@ class MainWindow(QWidget):
         self.setLayout(self.mainLayout)
 
         self.setMouseTracking(True)
-        self.setWindowTitle("Tab Holder")
+        self.setWindowTitle("Internet Tab Holder")
         self.setMinimumSize(MIN_TAB_WIDTH*3 + 100, MIN_TAB_HEIGHT*3)
 
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        #self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
         #IF TAB FILE EXISTS REMAKE TABS
         path = os.path.join(os.getcwd(), 'tabs.txt')
@@ -96,16 +119,18 @@ class MainWindow(QWidget):
     def newTab(self, new, url=None, imagePath=None, addTabAfter=False):
         if (self.tabCount % 3) == 0:
             self.currentRow = QHBoxLayout()
-            self.currentRow.setAlignment(Qt.AlignTop)
-            self.currentRow.setSpacing(5)
+            self.currentRow.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+            self.currentRow.setSpacing(3)
+            self.currentRow.setSizeConstraint(QLayout.SetMinimumSize)
             self.scrollWidgetLayout.insertLayout(self.scrollWidgetLayout.layout().count(), self.currentRow)
             self.tabRows.append(self.currentRow)
 
         self.tabCount += 1
-        drp = DropArea(self.tabCount, self.driver, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ASPECT_RATIO)
+        drp = DropArea(self.tabCount, self.driver, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ASPECT_RATIO, ABSOLUTE_IMAGE_FOLDER_PATH)
         drp.imageLoaded.connect(self.newTab)
         drp.tabDeleted.connect(lambda: self.deleteTab(drp))
         drp.tabAdded.connect(self.addTabToList)
+        drp.tabReordered.connect(self.reorderTab)
         drp.destroyed.connect(self.reorganizeTabList)
         self.currentRow.addWidget(drp)
 
@@ -133,18 +158,28 @@ class MainWindow(QWidget):
                 currentItems = line.split(' ')
                 tabNum = int(currentItems[2])
                 if not (tabNum == tab.tabNumber): out.write(line)
-                else: os.remove(os.path.join(os.getcwd(), currentItems[1]))
+                else: os.remove(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]))
 
     def addTabToList(self, tab, tabNo):
         if len(self.tabList) <= tabNo:
             self.tabList.append(tab)
         else:
             self.tabList[tabNo] = tab
+    
+    def reorderTab(self, tab, swapValue):
+        index = self.tabList.index(tab)
+        #SWAP VALUE = SHIFT IN TABS E.G. -1 FOR ONE LEFT
+        newIndex = index + swapValue
+        self.tabList.remove(tab)
+        self.tabList.insert(newIndex, tab)
+
+        self.reorganizeTabList()
+
 
     def reorganizeTabList(self):
         for index, tab in enumerate(self.tabList):
-            tab.tabNumber = index
-            tab.imagePath = str(index) + '.png'
+            #TAB NUMBERS START AT 1
+            tab.tabNumber = index+1
 
         #REORDER TABS IN THE SAVED TABS FILE SO THEY HAVE CORRECT TAB NUMBER
         with open('tabs.txt', 'r+') as f:
@@ -155,9 +190,14 @@ class MainWindow(QWidget):
                 l = line.split('\n')[0]
                 currentItems = l.split(' ')
                 currentString = ''
+                #REORGANIZING AFTER DELETING A TAB
                 if(currentTab != int(currentItems[2])):
                     currentString += currentItems[0] + ' ' + str(currentTab) + '.png ' + str(currentTab) + '\n'
-                    os.rename(os.path.join(os.getcwd(), currentItems[1]), os.path.join(os.getcwd(), str(currentTab) + '.png'))
+                    os.rename(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]), os.path.join(IMAGE_FOLDER_PATH, str(currentTab) + '.png'))
+                #REORGANIZING AFTER REORDERING A TAB
+                elif(currentItems[0] != self.tabList[currentTab-1].url):
+                    current = self.tabList[currentTab-1]
+                    currentString += current.url + ' ' + current.imagePath + ' ' + str(current.tabNumber) + '\n'
                 else:
                     currentString += line
                 currentTab += 1
@@ -188,33 +228,39 @@ class MainWindow(QWidget):
         pass
 
     def clearTabs(self):
-        #for i in range(len(self.tabList)-1, -1):
-        #    self.tabList.remove(i)
-        #    self.tabList[i].setParent(None)
-        #    self.tabList[i].deleteLater()
-        
-        #for i in range(len(self.tabRows)-1, -1):
-        #    self.tabRows.remove(i)
-        
-        for tab in self.tabList:
-            self.deleteTab(tab)
+        for i in range(len(self.tabList)-1, -1, -1):
+            self.tabList[i].setParent(None) 
+            self.tabList[i].deleteLater()
 
-        #while not (self.scrollWidgetLayout.isEmpty()):
-        #    currentLayout = self.scrollWidgetLayout.itemAt(0).layout()
-        #    while not (currentLayout.isEmpty()):
-        #        currentWidget = currentLayout.itemAt(0).widget()
-        #        currentLayout.
+            # REMOVE ENTRY FROM SAVED TABS FILE
+            fileData = []
+            with open('tabs.txt', 'r') as inp:
+                fileData = inp.readlines()
+
+            with open('tabs.txt', 'w') as out:
+                for line in fileData:
+                    # CURRENT ITEMS LAYOUT -> (URL IMAGE_PATH TAB_NUMBER)
+                    currentItems = line.split(' ')
+                    tabNum = int(currentItems[2])
+                    if not (tabNum == self.tabList[i].tabNumber): out.write(line)
+                    else:
+                        try: 
+                            os.remove(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]))
+                        except FileNotFoundError:
+                            print('File Not Found:::'+str(currentItems[1]))
+
+            self.tabList.remove(self.tabList[i])
+            self.tabCount = 0
     
     def quit(self):
         self.driver.quit()
         sys.exit(0)
-        print('Exiting')
 
 if __name__ == '__main__':
     app = QApplication([])
 
     widget = MainWindow()
-    widget.resize(800, 600)
+    #widget.resize(800, 600)
     widget.show()
 
     app.aboutToQuit.connect(widget.quit)
