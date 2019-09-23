@@ -105,7 +105,6 @@ class DropArea(QLabel):
         if self.pixmap() != None:
             self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.setFixedHeight(self.sizeHint().height())
-        
 
     #OVERLOAD SIZEHINT SO IT GETS SIZE OF PARENT LAYOUT CHILDREN / PARENT LAYOUT WIDTH
     def sizeHint(self):
@@ -134,12 +133,6 @@ class DropArea(QLabel):
         self._pixmap = QPixmap(os.path.join(self.imageFolder, self.imagePath), '1')
         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
         self.imageLoaded.emit(False)
-    
-    #def resizeImage(self, size):
-    #    pixmap = QPixmap(self.imagePath)
-    #    pixmap = pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio)
-    #    self.setPixmap(pixmap)
-    #    ## THIS NEEDS PROPER IMPLEMENTING AS IMAGE STRETCHES WHEN RESIZED
 
     #SAVE TAB ENTRY TO FILE
     def saveTab(self):
