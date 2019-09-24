@@ -3,25 +3,16 @@ import os
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QPalette, QColor, QIcon
+from constants import tabCount, tabRows, tabList, IMAGE_WIDTH, IMAGE_HEIGHT, ASPECT_RATIO, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ABSOLUTE_IMAGE_FOLDER_PATH, IMAGE_FOLDER_PATH
 from droparea import DropArea
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-
-IMAGE_WIDTH = 1920
-IMAGE_HEIGHT = 1080
-ASPECT_RATIO = (float)(IMAGE_HEIGHT/IMAGE_WIDTH)
-MIN_TAB_WIDTH = 360
-MIN_TAB_HEIGHT = (int)(MIN_TAB_WIDTH*ASPECT_RATIO)
-
-ABSOLUTE_IMAGE_FOLDER_PATH = os.path.join(os.getcwd(), 'thumbnails')
-IMAGE_FOLDER_PATH = 'thumbnails'
 
 class DropSiteWindow(QWidget):
     def __init__(self):
         super().__init__()
 
         ###
-        ### ON CLEAR TABS RESIZE THE MAIN TAB TO EXPAND
         ### MAKE CHECK WHEN REORDERING TABS IF ITS FIRST ELEMENT IN ROW
         ### RETHINK WHETHER YOU HAVE EMPTY TAB AS DROP AREA OR WHOLE WINDOW AS DROP AREA
         ### MAKE FILE WITH CONSTANTS???
@@ -36,15 +27,12 @@ class DropSiteWindow(QWidget):
         #### SUPPORT MULTIPLE OTHER DATA TYPES E.G. PDF OPENS IN PDF VIEWER
         ### REORDER TABS VERTICALLY????
         ### DONT HARDCODE WINDOW SIZE
-        ### MOVE THE MAIN WINDOW THING INTO A NEW FILE
         ###
 
-        #SETUP THUMBNAIL FOLDER 
+        # SETUP THUMBNAIL FOLDER 
         if not (os.path.isdir(ABSOLUTE_IMAGE_FOLDER_PATH)): os.mkdir(ABSOLUTE_IMAGE_FOLDER_PATH)
 
-        self.tabCount = 0
-        self.tabRows = []
-        self.tabList = []
+        self.clearingTabs = False
 
         # SETUP HEADLESS CHROME DRIVER -> SETS IMAGE RESOLUTION (BROWSER_SIZE)
         options = Options()
@@ -98,7 +86,7 @@ class DropSiteWindow(QWidget):
         #self.mainLayout.addWidget(menuBar)
         self.setLayout(self.mainLayout)
 
-        #IF TAB FILE EXISTS REMAKE TABS
+        # IF TAB FILE EXISTS REMAKE TABS
         path = os.path.join(os.getcwd(), 'tabs.txt')
         exists = os.path.isfile(path)
         size = 0
@@ -122,17 +110,18 @@ class DropSiteWindow(QWidget):
                 else:
                     self.newTab(True, url, imagePath, False)
 
-    def newTab(self, new, url=None, imagePath=None, addTabAfter=False):
-        if (self.tabCount % 3) == 0:
+    def newTab(self, load=False, url=None, imagePath=None, addTabAfter=False):
+        global tabCount
+        if (tabCount % 3) == 0:
             self.currentRow = QHBoxLayout()
             self.currentRow.setAlignment(Qt.AlignTop | Qt.AlignLeft)
             self.currentRow.setSpacing(3)
             self.currentRow.setSizeConstraint(QLayout.SetMinimumSize)
             self.scrollWidgetLayout.insertLayout(self.scrollWidgetLayout.layout().count(), self.currentRow)
-            self.tabRows.append(self.currentRow)
+            tabRows.append(self.currentRow)
 
-        self.tabCount += 1
-        drp = DropArea(self.tabCount, self.driver, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ASPECT_RATIO, ABSOLUTE_IMAGE_FOLDER_PATH)
+        tabCount += 1
+        drp = DropArea(tabCount, self.driver, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ASPECT_RATIO, ABSOLUTE_IMAGE_FOLDER_PATH)
         drp.imageLoaded.connect(self.newTab)
         drp.tabDeleted.connect(lambda: self.deleteTab(drp))
         drp.tabAdded.connect(self.addTabToList)
@@ -140,16 +129,17 @@ class DropSiteWindow(QWidget):
         drp.destroyed.connect(self.reorganizeTabList)
         self.currentRow.addWidget(drp)
 
-        #IF ITS A NEW TAB LOAD IAMGE AND URL
-        if new: drp.load(url, imagePath, addTabAfter)
+        # IF ITS A NEW TAB LOAD IAMGE AND URL
+        if load: drp.load(url, imagePath, addTabAfter)
 
     def deleteTab(self, tab):
-        if self.tabCount == 1:
+        global tabCount
+        if tabCount == 1:
             tab.taken = False
             tab.clear()
         else:
-            self.tabCount -= 1
-            self.tabList.remove(tab)
+            tabCount -= 1
+            tabList.remove(tab)
             tab.setParent(None) 
             tab.deleteLater()
 
@@ -158,82 +148,99 @@ class DropSiteWindow(QWidget):
         with open('tabs.txt', 'r') as inp:
             fileData = inp.readlines()
 
+        # CHECK IF THERE IS DUPLICATE TAB IF SO DON'T DELETE IMAGE
+        deleteImage = True
+        for tabItem in tabList:
+            if tabItem.url == tab.url:
+                deleteImage = False
+
         with open('tabs.txt', 'w') as out:
             for line in fileData:
                 # CURRENT ITEMS LAYOUT -> (URL IMAGE_PATH TAB_NUMBER)
                 currentItems = line.split(' ')
                 tabNum = int(currentItems[2])
-                if not (tabNum == tab.tabNumber): out.write(line)
-                else: os.remove(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]))
+                if not (tabNum == tab.tabNumber): 
+                    out.write(line)
+                else: 
+                    if deleteImage:
+                        try: os.remove(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]))
+                        except FileNotFoundError: print('File Not Found:::' + currentItems[1])
 
     def addTabToList(self, tab, tabNo):
-        if len(self.tabList) <= tabNo:
-            self.tabList.append(tab)
+        global tabList
+        if len(tabList) <= tabNo:
+            tabList.append(tab)
         else:
-            self.tabList[tabNo] = tab
+            tabList[tabNo] = tab
     
     def reorderTab(self, tab, swapValue):
-        index = self.tabList.index(tab)
-        #SWAP VALUE = SHIFT IN TABS E.G. -1 FOR ONE LEFT
+        global tabList
+        index = tabList.index(tab)
+        # SWAP VALUE = SHIFT IN TABS E.G. -1 FOR ONE LEFT
         newIndex = index + swapValue
-        self.tabList.remove(tab)
-        self.tabList.insert(newIndex, tab)
-
+        tabList.remove(tab)
+        tabList.insert(newIndex, tab)
         self.reorganizeTabList()
 
-
     def reorganizeTabList(self):
-        for index, tab in enumerate(self.tabList):
-            #TAB NUMBERS START AT 1
-            tab.tabNumber = index+1
+        global tabList
+        global tabRows
+        if not self.clearingTabs:
+            for index, tab in enumerate(tabList):
+                #TAB NUMBERS START AT 1
+                tab.tabNumber = index+1
 
-        #REORDER TABS IN THE SAVED TABS FILE SO THEY HAVE CORRECT TAB NUMBER
-        with open('tabs.txt', 'r+') as f:
-            lines = f.readlines()
-            currentTab = 1
-            finalStringData = ''
-            for line in lines:
-                l = line.split('\n')[0]
-                currentItems = l.split(' ')
-                currentString = ''
-                #REORGANIZING AFTER DELETING A TAB
-                if(currentTab != int(currentItems[2])):
-                    currentString += currentItems[0] + ' ' + str(currentTab) + '.png ' + str(currentTab) + '\n'
-                    os.rename(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]), os.path.join(IMAGE_FOLDER_PATH, str(currentTab) + '.png'))
-                #REORGANIZING AFTER REORDERING A TAB
-                elif(currentItems[0] != self.tabList[currentTab-1].url):
-                    current = self.tabList[currentTab-1]
-                    currentString += current.url + ' ' + current.imagePath + ' ' + str(current.tabNumber) + '\n'
-                else:
-                    currentString += line
-                currentTab += 1
-                finalStringData += currentString
+            # REORDER TABS IN THE SAVED TABS FILE SO THEY HAVE CORRECT TAB NUMBER
+            with open('tabs.txt', 'r+') as f:
+                lines = f.readlines()
+                currentTab = 1
+                finalStringData = ''
+                for line in lines:
+                    l = line.split('\n')[0]
+                    currentItems = l.split(' ')
+                    currentString = ''
+                    # REORGANIZING AFTER DELETING A TAB
+                    if(currentTab != int(currentItems[2])):
+                        currentString += currentItems[0] + ' ' + tabList[currentTab-1].imagePath + ' ' + str(currentTab) + '\n'
+                    # REORGANIZING AFTER REORDERING A TAB
+                    elif(currentItems[0] != tabList[currentTab-1].url):
+                        current = tabList[currentTab-1]
+                        currentString += current.url + ' ' + current.imagePath + ' ' + str(current.tabNumber) + '\n'
+                    else:
+                        currentString += line
+                    currentTab += 1
+                    finalStringData += currentString
 
-            # SEEK BEGINNING -> CLEAR FILE -> WRITE DATA (TRUNCATE SETS FILE SIZE TO MAX (0))
-            f.seek(0)
-            f.truncate(0)
-            f.write(finalStringData)
-        
-        #IF ANY LAYOUTS HAVE < 3 CHILDREN REORGANIZE THE WIDGETS
-        complete = False
-        while not complete:
-            for i in range(0, len(self.tabRows)-1):
-                if self.tabRows[i].count() < 3:
-                    child = self.tabRows[i + 1].itemAt(0)
-                    self.tabRows[i + 1].removeItem(child)
-                    self.tabRows[i].addItem(child)
-            complete = True
-        
-        #IF CURRENT ROW HAS NO CHILDREN REMOVE IT AND SET IT TO PREVIOUS ROW
-        if self.currentRow.count() == 0:
-            self.tabRows.remove(self.currentRow)
-            self.currentRow.deleteLater()
-            self.currentRow = self.tabRows[len(self.tabRows)-1]
+                # SEEK BEGINNING -> CLEAR FILE -> WRITE DATA (TRUNCATE SETS FILE SIZE TO MAX (0))
+                f.seek(0)
+                f.truncate(0)
+                f.write(finalStringData)
+            
+            #IF ANY LAYOUTS HAVE < 3 CHILDREN REORGANIZE THE WIDGETS
+            complete = False
+            while not complete:
+                for i in range(0, len(tabRows)-1):
+                    if tabRows[i].count() < 3:
+                        child = tabRows[i + 1].itemAt(0)
+                        tabRows[i + 1].removeItem(child)
+                        tabRows[i].addItem(child)
+                complete = True
+            
+            # IF CURRENT ROW HAS NO CHILDREN REMOVE IT AND SET IT TO PREVIOUS ROW
+            if self.currentRow.count() == 0:
+                tabRows.remove(self.currentRow)
+                self.currentRow.deleteLater()
+                self.currentRow = tabRows[len(tabRows)-1]
 
     def clearTabs(self):
-        for i in range(len(self.tabList)-1, -1, -1):
-            self.tabList[i].setParent(None) 
-            self.tabList[i].deleteLater()
+        global tabCount
+        global tabList
+        global tabRows
+
+        self.clearingTabs = True
+        for i in range(len(tabList)-1, -1, -1):
+            tabList[i].setParent(None) 
+            tabList[i].deleteLater()
 
             # REMOVE ENTRY FROM SAVED TABS FILE
             fileData = []
@@ -245,15 +252,26 @@ class DropSiteWindow(QWidget):
                     # CURRENT ITEMS LAYOUT -> (URL IMAGE_PATH TAB_NUMBER)
                     currentItems = line.split(' ')
                     tabNum = int(currentItems[2])
-                    if not (tabNum == self.tabList[i].tabNumber): out.write(line)
+                    if not (tabNum == tabList[i].tabNumber): out.write(line)
                     else:
                         try: 
                             os.remove(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]))
                         except FileNotFoundError:
                             print('File Not Found:::'+str(currentItems[1]))
 
-            self.tabList.remove(self.tabList[i])
-            self.tabCount = 0
+            tabList.remove(tabList[i])
+        tabCount = 0
+
+        # REMOVE ALL ROWS FROM LIST EXCEPT FIRST AND CLEAR TABS
+        for x in range(len(tabRows)-1, -1, -1):
+            if tabRows[x].count() > 0:
+                tabRows[x].itemAt(0).widget().deleteLater()
+            if x == 0:
+                tabRows[x].destroyed.connect(lambda: self.newTab(False))
+            tabRows[x].deleteLater()
+            tabRows.remove(tabRows[x])
+            
+        self.clearingTabs = False
     
     def quit(self):
         self.driver.quit()

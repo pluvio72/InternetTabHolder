@@ -2,11 +2,12 @@ import os
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+import constants
 
 MIN_FOR_CLOSE = 100
 
 class DropArea(QLabel):
-    #INITIALIZE SIGNALS
+    # INITIALIZE SIGNALS
     imageLoaded = pyqtSignal(bool)
     tabDeleted = pyqtSignal(QWidget)
     tabAdded = pyqtSignal(QWidget, int)
@@ -45,21 +46,32 @@ class DropArea(QLabel):
     def onDestroy():
         print('On destroy')
 
+    def enterEvent(self, event):
+        if self.taken:
+            self.setText(self.url)
+    
+    def leaveEvent(self, event):
+        if self.taken:
+            self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+
     def areaClicked(self, event):
         self.startClick = event.pos()
     
-    #IF DRAG UP REMOVE TAB, IF CLICK OPEN URL
+    # IF DRAG UP REMOVE TAB, IF CLICK OPEN URL
     def areaReleased(self, event):   
         self.endClick = event.pos()
         xDiff = self.endClick.x() - self.startClick.x()
         yDiff = abs(self.endClick.y() - self.startClick.y())
 
+        # IF X/Y DELTA GREATER THAN RESPECTIVE MINS REORDER/DELETE
         if yDiff > MIN_FOR_CLOSE or abs(xDiff) > self.sizeHint().width():
+            # IF Y DELTA GREATER THAN MIN CLOSE/DELETE TAB
             if yDiff > MIN_FOR_CLOSE:
                 self.tabDeleted.emit(self)
+            # IF X DELTA GREATER THAN TAB WIDTH REORDER TAB
             elif abs(xDiff) > self.sizeHint().width():
                 index = (self.tabNumber-1) % 3
-                #GET TABS TO MOVE E.G. -1 (1 LEFT) OR 2 (2 RIGHT)
+                # GET TABS TO MOVE E.G. -1 (1 LEFT) OR 2 (2 RIGHT)
                 tabsToSwap = (int)(xDiff/self.sizeHint().width())
                 left = True if (xDiff < 0) else False
                 #GET PARENT WIDGET AND MOVE TAB
@@ -67,12 +79,42 @@ class DropArea(QLabel):
                 parent.removeWidget(self)
                 parent.insertWidget(index + tabsToSwap, self)
                 
-                #EMIT SIGNAL SO LIST CAN BE REORGANIZED AND CHAGNES SAVED TO FILE
+                # EMIT SIGNAL SO LIST CAN BE REORGANIZED AND CHAGNES SAVED TO FILE
                 self.tabReordered.emit(self, tabsToSwap)
+        # OPEN TAB IN BROWSER OR IF EMPTY ENTER URL MANUALLY
         else: 
             if self.taken: QDesktopServices.openUrl(QUrl(self.url))
+            else:
+                dialog = QDialog()
+                layout = QVBoxLayout()
+                label = QLabel("Enter URL: ")
+                label.setAlignment(Qt.AlignCenter)
+                textEdit = QLineEdit("https://www.google.com")
+                textEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+                textEdit.setFrame(QFrame.NoFrame)
+                button = QPushButton("Add URL")
 
-    #SET TEXT TO DROP AND CHANGE COLOR
+                def dialogButton():
+                    self.loadFromUrl(textEdit.text())
+                    dialog.deleteLater()
+                button.clicked.connect(dialogButton)
+
+                urlList = QListWidget()
+                for tab in constants.tabList:
+                    current = QListWidgetItem(tab.url)
+                    urlList.addItem(current)
+                urlList.currentItemChanged.connect(lambda current, previous: textEdit.setText(current.text()))
+
+                layout.addWidget(label)
+                layout.addWidget(textEdit)
+                layout.addWidget(urlList)
+                layout.addWidget(button)
+                dialog.setWindowModality(Qt.ApplicationModal)
+                dialog.setWindowTitle("Add Manually")
+                dialog.setLayout(layout)
+                dialog.exec_()
+
+    # SET TEXT TO DROP AND CHANGE COLOR
     def dragEnterEvent(self, event):
         if not self.taken:
             self.setText('Drop Here')
@@ -95,27 +137,31 @@ class DropArea(QLabel):
             self.setBackgroundRole(QPalette.Dark)
 
             ### HANDLE EXCEPTIONS WERE PAGES ARE BLOCKED OR NETWORK DOESNT WORK ETC
+            ### WHEN GOING BACK ONLINE LOAD IMAGE??
             self.downloadImage()
             self.saveTab()
             event.acceptProposedAction()
+            # CONNECTED TO ADD TAB TO LIST
             self.tabAdded.emit(self, self.tabNumber)
     
-    #ON RESIZE UPDATE PIXMAP SIZE
+    # ON RESIZE UPDATE PIXMAP SIZE
     def resizeEvent(self, e):
         if self.pixmap() != None:
             self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.setFixedHeight(self.sizeHint().height())
 
-    #OVERLOAD SIZEHINT SO IT GETS SIZE OF PARENT LAYOUT CHILDREN / PARENT LAYOUT WIDTH
+    # OVERLOAD SIZEHINT SO IT GETS SIZE OF PARENT LAYOUT CHILDREN / PARENT LAYOUT WIDTH
     def sizeHint(self):
-        count = self.parent().layout().itemAt(0).count()
-        width = self.parent().width() / count
-        if width >= self.minWidth:
-            return QSize(width, width*self.aspectRatio)
-        else:
-            return QSize(self.minWidth, self.minHeight)
+        # WHEN CLEARING TABS SOMETIMES THE ROW IS NOT THERE WHEN RESIZE EVENT OCCURS
+        hasAttr = hasattr(self.parent().layout().itemAt(0), "count")
+        if hasAttr:
+            count = self.parent().layout().itemAt(0).count()
+            width = self.parent().width() / count
+            if width >= self.minWidth:
+                return QSize(width, width*self.aspectRatio)
+        return QSize(self.minWidth, self.minHeight)
 
-    #LOAD TAB PIXMAP AND SET CLASS VARIABLES
+    # LOAD TAB PIXMAP AND SET CLASS VARIABLES
     def load(self, url, imagePath, addTabAfter):
         self.taken = True
         self.url = url
@@ -123,24 +169,49 @@ class DropArea(QLabel):
         self.imagePath = imagePath
         self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath)).scaled(self.sizeHint(), Qt.KeepAspectRatio)
         self.setPixmap(self._pixmap)
+        # CONNECTED TO NEWTAB
         if addTabAfter: self.imageLoaded.emit(False)
 
-    #DOWNLOAD IMAGE FROM DRIVER
+    # LOAD FUNCTION OVERLOAD WITH ONLY URL FOR MANUALLY ADDNG TAB
+    def loadFromUrl(self, url):
+        self.taken = True
+        self.url = url
+        self.imagePath = str(url.replace('/','') + '.png')
+        if not self.checkDuplicate(url):
+            self.driver.get(url)
+            self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
+
+        self.setLocalPixmap()
+
+    # DOWNLOAD IMAGE FROM DRIVER
     def downloadImage(self):
         self.imagePath = str(self.url).replace('/', '') + '.png'
-        self.driver.get(self.url)
-        self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
+        if not self.checkDuplicate(self.url):
+            self.driver.get(self.url)
+            self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
+
+        self.setLocalPixmap()
+    
+    # SET PIXMAP FROM IMAGEPATH MEMBER VARIABLE AND ADD NEW TAB AFTER
+    def setLocalPixmap(self):
         self._pixmap = QPixmap(os.path.join(self.imageFolder, self.imagePath), '1')
         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
         self.imageLoaded.emit(False)
 
-    #SAVE TAB ENTRY TO FILE
+
+    def checkDuplicate(self, url):
+        for tab in constants.tabList:
+            if tab.url == url:
+                return True
+        return False
+
+    # SAVE TAB ENTRY TO FILE
     def saveTab(self):
         with open('tabs.txt', 'a') as f:
             info = self.url + ' ' + self.imagePath + ' ' + str(self.tabNumber) + '\n'
             f.write(info)
 
-    #CLEAR TAB AND SET TEXT
+    # CLEAR TAB AND SET TEXT
     def clear(self):
         self.setText('Drop URL')
         self.setBackgroundRole(QPalette.Dark)
