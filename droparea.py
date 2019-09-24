@@ -17,7 +17,6 @@ class DropArea(QLabel):
         super().__init__()
 
         # CONNECT EVENTS (MOUSE/SLOTS & SIGNALS)
-        self.destroyed.connect(self.onDestroy)
         self.mousePressEvent = self.areaClicked
         self.mouseReleaseEvent = self.areaReleased
 
@@ -43,19 +42,20 @@ class DropArea(QLabel):
         self.tabNumber = tabNumber
         self.clear()
 
-    def onDestroy():
-        print('On destroy')
-
     def enterEvent(self, event):
         if self.taken:
-            self.setText(self.url)
+            self.setToolTip(self.url)
+            self.setToolTipDuration(1000)
+        else: self.setBackgroundRole(QPalette.Highlight)
     
     def leaveEvent(self, event):
-        if self.taken:
-            self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        if not self.taken: self.setBackgroundRole(QPalette.Dark)
 
     def areaClicked(self, event):
         self.startClick = event.pos()
+        if self.taken:
+            self.setFrameStyle(QFrame.Plain | QFrame.Box)
+            self.setLineWidth(5)
     
     # IF DRAG UP REMOVE TAB, IF CLICK OPEN URL
     def areaReleased(self, event):   
@@ -70,17 +70,20 @@ class DropArea(QLabel):
                 self.tabDeleted.emit(self)
             # IF X DELTA GREATER THAN TAB WIDTH REORDER TAB
             elif abs(xDiff) > self.sizeHint().width():
-                index = (self.tabNumber-1) % 3
-                # GET TABS TO MOVE E.G. -1 (1 LEFT) OR 2 (2 RIGHT)
-                tabsToSwap = (int)(xDiff/self.sizeHint().width())
-                left = True if (xDiff < 0) else False
-                #GET PARENT WIDGET AND MOVE TAB
-                parent = self.parent().layout().itemAt(0)
-                parent.removeWidget(self)
-                parent.insertWidget(index + tabsToSwap, self)
-                
-                # EMIT SIGNAL SO LIST CAN BE REORGANIZED AND CHAGNES SAVED TO FILE
-                self.tabReordered.emit(self, tabsToSwap)
+                if self.taken:
+                    index = (self.tabNumber-1) % 3
+                    # GET TABS TO MOVE E.G. -1 (1 LEFT) OR 2 (2 RIGHT)
+                    tabsToSwap = (int)(xDiff/self.sizeHint().width())
+                    left = True if (xDiff < 0) else False
+                    # IF NOT LEFT MOST TAB AND TRYING TO DRAG LEFT
+                    if not (index == 0 and left):
+                        #GET PARENT WIDGET AND MOVE TAB
+                        parent = self.parent().layout().itemAt(0)
+                        parent.removeWidget(self)
+                        parent.insertWidget(index + tabsToSwap, self)
+                    
+                        # EMIT SIGNAL SO LIST CAN BE REORGANIZED AND CHAGNES SAVED TO FILE
+                        self.tabReordered.emit(self, tabsToSwap)
         # OPEN TAB IN BROWSER OR IF EMPTY ENTER URL MANUALLY
         else: 
             if self.taken: QDesktopServices.openUrl(QUrl(self.url))
@@ -113,12 +116,16 @@ class DropArea(QLabel):
                 dialog.setWindowTitle("Add Manually")
                 dialog.setLayout(layout)
                 dialog.exec_()
+        
+        if self.taken:
+            self.setFrameStyle(QFrame.NoFrame)
+            self.setLineWidth(2)
 
     # SET TEXT TO DROP AND CHANGE COLOR
     def dragEnterEvent(self, event):
         if not self.taken:
             self.setText('Drop Here')
-            self.setBackgroundRole(QPalette.Light)
+            self.setBackgroundRole(QPalette.Mid)
             event.acceptProposedAction()
     
     def dragMoveEvent(self, event):
@@ -153,12 +160,13 @@ class DropArea(QLabel):
     # OVERLOAD SIZEHINT SO IT GETS SIZE OF PARENT LAYOUT CHILDREN / PARENT LAYOUT WIDTH
     def sizeHint(self):
         # WHEN CLEARING TABS SOMETIMES THE ROW IS NOT THERE WHEN RESIZE EVENT OCCURS
-        hasAttr = hasattr(self.parent().layout().itemAt(0), "count")
-        if hasAttr:
-            count = self.parent().layout().itemAt(0).count()
-            width = self.parent().width() / count
-            if width >= self.minWidth:
-                return QSize(width, width*self.aspectRatio)
+        if self.parent() != None:
+            hasAttr = hasattr(self.parent().layout().itemAt(0), "count")
+            if hasAttr:
+                count = self.parent().layout().itemAt(0).count()
+                width = self.parent().width() / count
+                if width >= self.minWidth:
+                    return QSize(width, width*self.aspectRatio)
         return QSize(self.minWidth, self.minHeight)
 
     # LOAD TAB PIXMAP AND SET CLASS VARIABLES
@@ -180,7 +188,6 @@ class DropArea(QLabel):
         if not self.checkDuplicate(url):
             self.driver.get(url)
             self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
-
         self.setLocalPixmap()
 
     # DOWNLOAD IMAGE FROM DRIVER
@@ -189,7 +196,6 @@ class DropArea(QLabel):
         if not self.checkDuplicate(self.url):
             self.driver.get(self.url)
             self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
-
         self.setLocalPixmap()
     
     # SET PIXMAP FROM IMAGEPATH MEMBER VARIABLE AND ADD NEW TAB AFTER

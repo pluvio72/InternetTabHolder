@@ -18,7 +18,7 @@ IMAGE_FOLDER_PATH = 'thumbnails'
 class MainWindow(QMainWindow):
     def __init__(self, centralWidget, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.setMinimumSize(MIN_TAB_WIDTH*3 + 100, MIN_TAB_HEIGHT*3)
+        self.setMinimumSize(MIN_TAB_WIDTH*3 + 12, MIN_TAB_HEIGHT*3+14)
         self.setWindowTitle('Internet Tab Holder')
         self.setCentralWidget(centralWidget)
         self.setMouseTracking(True)
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     window = MainWindow(widget)
     window.show() 
 
-    app.aboutToQuit.connect(widget.quit)
+    app.aboutToQuit.connect(widget.close)
     #app.setStyle('macintosh')
 
     mainWindow = QMainWindow
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     style.setColor(QPalette.WindowText, Qt.red)
     style.setColor(QPalette.Base, QColor(25, 25, 25))
     style.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-    style.setColor(QPalette.ToolTipBase, Qt.white)
+    style.setColor(QPalette.ToolTipBase, Qt.black)
     style.setColor(QPalette.ToolTipText, Qt.white)
     style.setColor(QPalette.Text, Qt.red)
     style.setColor(QPalette.Button, QColor(53, 53, 53))
@@ -68,6 +68,7 @@ if __name__ == '__main__':
     style.setColor(QPalette.Link, QColor(42, 130, 218))
     style.setColor(QPalette.Highlight, QColor(42, 130, 218))
     style.setColor(QPalette.HighlightedText, Qt.black)
+    style.setColor(QPalette.Light, QColor(53, 53, 53))
     app.setPalette(style)
 
     sys.exit(app.exec_())
