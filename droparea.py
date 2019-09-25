@@ -108,9 +108,17 @@ class DropArea(QLabel):
                 button.clicked.connect(dialogButton)
 
                 urlList = QListWidget()
-                for tab in constants.tabList:
-                    current = QListWidgetItem(tab.url)
-                    urlList.addItem(current)
+                path = os.path.join(os.getcwd(), '.tabs.txt')
+                if os.path.isfile(path):
+                    if os.path.getsize(path):
+                        with open('.tabs.txt', 'r') as f:
+                            lines = f.readlines()
+                            for line in lines:
+                                cur = line.split('\n')[0]
+                                # GET URL FROM LINE (URL IMAGEPATH)
+                                current = QListWidgetItem(cur.split(' ')[0])
+                                urlList.addItem(current)
+
                 urlList.currentItemChanged.connect(lambda current, previous: textEdit.setText(current.text()))
 
                 layout.addWidget(label)
@@ -190,9 +198,25 @@ class DropArea(QLabel):
         self.taken = True
         self.url = url
         self.imagePath = str(url.replace('/','') + '.png')
-        if not self.checkDuplicate(url):
-            self.driver.get(url)
-            self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
+
+        if os.path.isfile('.tabs.txt') and os.path.getsize('.tabs.txt') > 0:
+            with open('.tabs.txt', 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    cur = line.split('\n')[0]
+                    curUrl = cur.split(' ')[0]
+                    imagePath = cur.split(' ')[1]
+                    if curUrl == url:
+                        if not os.path.isfile(os.path.join(self.imageFolder, imagePath[1:])):
+                            os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
+                        self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath[1:], '1'))
+                        self.imagePath = imagePath[1:]
+                        self.url = url
+                        self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
+        else:
+            if not self.checkDuplicate(url):
+                self.driver.get(url)
+                self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
         self.tabAdded.emit(self, self.tabNumber)
         self.saveTab()
         self.setLocalPixmap()

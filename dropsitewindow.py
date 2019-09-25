@@ -13,6 +13,7 @@ class DropSiteWindow(QWidget):
         super().__init__()
 
         ###
+        ### WHEN CLEARING TABS ARCHIVE THEM ALL
         ### ADD SUPPORT FOR MULTIPLE PAGES OF TABS AND NAME THEM??
         ### QUICK START IN OPTIONS OR CHANGE OPTIONS TO FILE MENU
         ### ADD OPTIONS TO CHANGE TABS PER ROW?
@@ -22,6 +23,8 @@ class DropSiteWindow(QWidget):
         ### SUPPORT MULTIPLE OTHER DATA TYPES E.G. PDF OPENS IN PDF VIEWER
         ### REORDER TABS VERTICALLY????
         ### MAYBE RUN CHECK WITH OS.POPEN IF CHROMEDRIVER INSTANCES ARE MORE THEN 5 OR SO AND KILL THEM
+        ### MAKE WINDOW DIALOG SEPARATE CLASS
+        ### MAKE CUSTOM WIDGET FOR CLOSE BUTTON
         ###
 
         # SETUP THUMBNAIL FOLDER 
@@ -134,9 +137,7 @@ class DropSiteWindow(QWidget):
                     out.write(line)
                 else: 
                     if archiveImage:
-                        try: 
-                            #os.remove(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]))
-                            os.rename(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]), os.path.join(IMAGE_FOLDER_PATH, '.' + currentItems[1]))
+                        try: os.rename(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]), os.path.join(IMAGE_FOLDER_PATH, '.' + currentItems[1]))
                         except FileNotFoundError: print('File Not Found:::' + currentItems[1])
         
         if archiveImage:
@@ -249,10 +250,7 @@ class DropSiteWindow(QWidget):
                 for line in fileData:
                     # CURRENT ITEMS LAYOUT -> (URL IMAGE_PATH TAB_NUMBER)
                     currentItems = line.split(' ')
-                    try: 
-                        os.remove(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]))
-                    except FileNotFoundError:
-                        print('File Not Found:::'+str(currentItems[1]))
+                    self.archiveTab(currentItems[1], currentItems[0])
 
             tabList.remove(tabList[i])
         os.remove(os.path.join(os.getcwd(), 'tabs.txt'))
@@ -268,6 +266,11 @@ class DropSiteWindow(QWidget):
             tabRows.remove(tabRows[x])
         
         self.clearingTabs = False
+    
+    def archiveTab(self, imagePath, url):
+        os.rename(os.path.join(IMAGE_FOLDER_PATH, imagePath), os.path.join(IMAGE_FOLDER_PATH, '.'+imagePath))
+        with open('.tabs.txt', 'a') as f:
+            f.write(url + ' .' + imagePath + '\n')
     
     def close(self):
         self.driver.quit()
