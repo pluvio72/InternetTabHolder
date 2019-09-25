@@ -39,6 +39,11 @@ class DropArea(QLabel):
         self.setCursor(Qt.PointingHandCursor)
         self.setMouseTracking(True)
 
+        button = QPushButton("x", self)
+        button.move(0, 0)
+        button.show()
+        button.clicked.connect(lambda: self.tabDeleted.emit(self))
+
         self.tabNumber = tabNumber
         self.clear()
 
@@ -188,6 +193,8 @@ class DropArea(QLabel):
         if not self.checkDuplicate(url):
             self.driver.get(url)
             self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
+        self.tabAdded.emit(self, self.tabNumber)
+        self.saveTab()
         self.setLocalPixmap()
 
     # DOWNLOAD IMAGE FROM DRIVER

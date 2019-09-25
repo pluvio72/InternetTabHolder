@@ -13,15 +13,14 @@ class DropSiteWindow(QWidget):
         super().__init__()
 
         ###
+        ### ADD SUPPORT FOR MULTIPLE PAGES OF TABS AND NAME THEM??
+        ### QUICK START IN OPTIONS OR CHANGE OPTIONS TO FILE MENU
+        ### ADD OPTIONS TO CHANGE TABS PER ROW?
         ### DONT DELETE PREVIOUSLY DELETED TABS KEEP IMAGE FILE IN _NAME AND _TABLIST CAN BE SHOWN IN MANUAL TAB ADD DIALOG
         ### RETHINK WHETHER YOU HAVE EMPTY TAB AS DROP AREA OR WHOLE WINDOW AS DROP AREA
-        ### AFTER FIRST FULL ROW DONT LET THE NEW TAB SPAN WHOLE ROW
-        ### CHANGE TABS PER ROW ON RESIZE???
-        ### INSTEAD OF + 100 IN THE SETMINSIZE TRY TO FIND CONTENT MARGIN
         ### FAVOURITE TABS HIGHER
         ### SUPPORT MULTIPLE OTHER DATA TYPES E.G. PDF OPENS IN PDF VIEWER
         ### REORDER TABS VERTICALLY????
-        ### DONT HARDCODE WINDOW SIZE
         ### MAYBE RUN CHECK WITH OS.POPEN IF CHROMEDRIVER INSTANCES ARE MORE THEN 5 OR SO AND KILL THEM
         ###
 
@@ -29,11 +28,12 @@ class DropSiteWindow(QWidget):
         if not (os.path.isdir(ABSOLUTE_IMAGE_FOLDER_PATH)): os.mkdir(ABSOLUTE_IMAGE_FOLDER_PATH)
 
         self.clearingTabs = False
+        self.acceptDrops = True
 
         # SETUP HEADLESS CHROME DRIVER -> SETS IMAGE RESOLUTION (BROWSER_SIZE)
         options = Options()
         options.headless = True
-        self.driver = webdriver.Chrome(options=options, executable_path='./chromedriver')
+        self.driver = webdriver.Chrome(options=options, executable_path='./chromedriver_77')
         self.driver.set_window_size(IMAGE_WIDTH, IMAGE_HEIGHT)
 
         # SETUP LAYOUTS
@@ -120,10 +120,10 @@ class DropSiteWindow(QWidget):
             fileData = inp.readlines()
 
         # CHECK IF THERE IS DUPLICATE TAB IF SO DON'T DELETE IMAGE
-        deleteImage = True
+        archiveImage = True
         for tabItem in tabList:
             if tabItem.url == tab.url:
-                deleteImage = False
+                archiveImage = False
 
         with open('tabs.txt', 'w') as out:
             for line in fileData:
@@ -133,9 +133,30 @@ class DropSiteWindow(QWidget):
                 if not (tabNum == tab.tabNumber): 
                     out.write(line)
                 else: 
-                    if deleteImage:
-                        try: os.remove(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]))
+                    if archiveImage:
+                        try: 
+                            #os.remove(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]))
+                            os.rename(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]), os.path.join(IMAGE_FOLDER_PATH, '.' + currentItems[1]))
                         except FileNotFoundError: print('File Not Found:::' + currentItems[1])
+        
+        if archiveImage:
+            # APPEND URL TO FILE AND CHECK IF THERE ARE OVER 20 ENTRIED IF SO REMOVE ONE ENTRY
+            with open('.tabs.txt', 'a+') as f:
+                f.seek(0)
+                lines = f.readlines()
+                if len(lines) > 20:
+                    f.seek(0)
+                    f.truncate(0)
+                    for i in range(1, len(lines)):
+                        f.write(lines[i])
+                # CHECK FOR DUPLICATE
+                duplicate = False
+                for line in lines:
+                    if line.split(' ')[0] == tab.url:
+                        duplicate = True
+                if not duplicate:
+                    f.write(tab.url + ' ' + '.' + tab.imagePath + '\n')
+
 
     def addTabToList(self, tab, tabNo):
         global tabList
