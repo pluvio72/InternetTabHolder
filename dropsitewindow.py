@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QPalette, QColor, QIcon
-from constants import tabCount, tabRows, tabList, IMAGE_WIDTH, IMAGE_HEIGHT, ASPECT_RATIO, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ABSOLUTE_IMAGE_FOLDER_PATH, IMAGE_FOLDER_PATH
+from constants import tabCount, tabRows, tabList, tabsPerRow, IMAGE_WIDTH, IMAGE_HEIGHT, ASPECT_RATIO, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ABSOLUTE_IMAGE_FOLDER_PATH, IMAGE_FOLDER_PATH
 from droparea import DropArea
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -86,7 +86,8 @@ class DropSiteWindow(QWidget):
 
     def newTab(self, load=False, url=None, imagePath=None, addTabAfter=False):
         global tabCount
-        if (tabCount % 3) == 0:
+        global tabsPerRow
+        if (tabCount % tabsPerRow) == 0:
             self.currentRow = QHBoxLayout()
             self.currentRow.setAlignment(Qt.AlignTop | Qt.AlignLeft)
             self.currentRow.setSpacing(3)
@@ -108,54 +109,56 @@ class DropSiteWindow(QWidget):
 
     def deleteTab(self, tab):
         global tabCount
-        if tabCount == 1:
-            tab.taken = False
-            tab.clear()
-        else:
-            tabCount -= 1
-            tabList.remove(tab)
-            tab.setParent(None) 
-            tab.deleteLater()
 
-        # REMOVE ENTRY FROM SAVED TABS FILE
-        fileData = []
-        with open('tabs.txt', 'r') as inp:
-            fileData = inp.readlines()
+        if tab.taken:
+            if tabCount == 1:
+                tab.taken = False
+                tab.clear()
+            else:
+                tabCount -= 1
+                tabList.remove(tab)
+                tab.setParent(None) 
+                tab.deleteLater()
 
-        # CHECK IF THERE IS DUPLICATE TAB IF SO DON'T DELETE IMAGE
-        archiveImage = True
-        for tabItem in tabList:
-            if tabItem.url == tab.url:
-                archiveImage = False
+            # REMOVE ENTRY FROM SAVED TABS FILE
+            fileData = []
+            with open('tabs.txt', 'r') as inp:
+                fileData = inp.readlines()
 
-        with open('tabs.txt', 'w') as out:
-            for line in fileData:
-                # CURRENT ITEMS LAYOUT -> (URL IMAGE_PATH TAB_NUMBER)
-                currentItems = line.split(' ')
-                tabNum = int(currentItems[2])
-                if not (tabNum == tab.tabNumber): 
-                    out.write(line)
-                else: 
-                    if archiveImage:
-                        self.archiveTab(currentItems[1], currentItems[0])
-        
-        #if archiveImage:
-        #    # APPEND URL TO FILE AND CHECK IF THERE ARE OVER 20 ENTRIED IF SO REMOVE ONE ENTRY
-        #    with open('.tabs.txt', 'a+') as f:
-        #        f.seek(0)
-        #        lines = f.readlines()
-        #        if len(lines) > 20:
-        #            f.seek(0)
-        #            f.truncate(0)
-        #            for i in range(1, len(lines)):
-        #                f.write(lines[i])
-        #        # CHECK FOR DUPLICATE
-        #        duplicate = False
-        #        for line in lines:
-        #            if line.split(' ')[0] == tab.url:
-        #                duplicate = True
-        #        if not duplicate:
-        #            f.write(tab.url + ' ' + '.' + tab.imagePath + '\n')
+            # CHECK IF THERE IS DUPLICATE TAB IF SO DON'T DELETE IMAGE
+            archiveImage = True
+            for tabItem in tabList:
+                if tabItem.url == tab.url:
+                    archiveImage = False
+
+            with open('tabs.txt', 'w') as out:
+                for line in fileData:
+                    # CURRENT ITEMS LAYOUT -> (URL IMAGE_PATH TAB_NUMBER)
+                    currentItems = line.split(' ')
+                    tabNum = int(currentItems[2])
+                    if not (tabNum == tab.tabNumber): 
+                        out.write(line)
+                    else: 
+                        if archiveImage:
+                            self.archiveTab(currentItems[1], currentItems[0])
+            
+            #if archiveImage:
+            #    # APPEND URL TO FILE AND CHECK IF THERE ARE OVER 20 ENTRIED IF SO REMOVE ONE ENTRY
+            #    with open('.tabs.txt', 'a+') as f:
+            #        f.seek(0)
+            #        lines = f.readlines()
+            #        if len(lines) > 20:
+            #            f.seek(0)
+            #            f.truncate(0)
+            #            for i in range(1, len(lines)):
+            #                f.write(lines[i])
+            #        # CHECK FOR DUPLICATE
+            #        duplicate = False
+            #        for line in lines:
+            #            if line.split(' ')[0] == tab.url:
+            #                duplicate = True
+            #        if not duplicate:
+            #            f.write(tab.url + ' ' + '.' + tab.imagePath + '\n')
 
 
     def addTabToList(self, tab, tabNo):
