@@ -209,17 +209,18 @@ class DropArea(QLabel):
                     if curUrl == url:
                         if not os.path.isfile(os.path.join(self.imageFolder, imagePath[1:])):
                             os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
-                        self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath[1:], '1'))
+                        self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath[1:]), '1')
                         self.imagePath = imagePath[1:]
                         self.url = url
                         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
+                        self.imageLoaded.emit(False)
         else:
             if not self.checkDuplicate(url):
                 self.driver.get(url)
                 self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
+                self.setLocalPixmap()
         self.tabAdded.emit(self, self.tabNumber)
         self.saveTab()
-        self.setLocalPixmap()
 
     # DOWNLOAD IMAGE FROM DRIVER
     def downloadImage(self):
@@ -227,6 +228,17 @@ class DropArea(QLabel):
         if not self.checkDuplicate(self.url):
             self.driver.get(self.url)
             self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
+        
+        if self.checkArchivedTabsExists():
+            with open('.tabs.txt', 'r') as f:
+                lines = f.readlines()
+                for line in lines:
+                    if line.split(' ')[0] == self.url:
+                        imagePath = line.split('\n')[0].split(' ')[1]
+                        os.rename(os.path.join(os.imageFolder, imagePath), os.path.join(os.imageFolder, imagePath[1:]))
+                        self.imagePath = imagePath[1:]
+                        #self._pixmap(os.path.join(self.imageFolder, imagePath[1:]))
+                        #self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.setLocalPixmap()
     
     # SET PIXMAP FROM IMAGEPATH MEMBER VARIABLE AND ADD NEW TAB AFTER
@@ -235,6 +247,11 @@ class DropArea(QLabel):
         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
         self.imageLoaded.emit(False)
 
+    # CHECK IF FILE EXISTS AND IF ITS NOT EMPTY
+    def checkArchivedTabsExists(self):
+        exists = os.path.isfile(os.path.join(os.getcwd(), '.tabs.txt'))
+        notEmpty = True if (os.path.getsize(os.path.join(os.getcwd(), '.tabs.txt')) > 0) else False
+        return (exists and notEmpty)
 
     def checkDuplicate(self, url):
         for tab in constants.tabList:

@@ -13,10 +13,10 @@ class DropSiteWindow(QWidget):
         super().__init__()
 
         ###
-        ### WHEN CLEARING TABS ARCHIVE THEM ALL
+        ### CHECK ARCHIVED TAB FILE SIZE
         ### ADD SUPPORT FOR MULTIPLE PAGES OF TABS AND NAME THEM??
         ### QUICK START IN OPTIONS OR CHANGE OPTIONS TO FILE MENU
-        ### ADD OPTIONS TO CHANGE TABS PER ROW?
+        ### ADD OPTIONS TO CHANGE TABS PER ROW
         ### DONT DELETE PREVIOUSLY DELETED TABS KEEP IMAGE FILE IN _NAME AND _TABLIST CAN BE SHOWN IN MANUAL TAB ADD DIALOG
         ### RETHINK WHETHER YOU HAVE EMPTY TAB AS DROP AREA OR WHOLE WINDOW AS DROP AREA
         ### FAVOURITE TABS HIGHER
@@ -137,26 +137,25 @@ class DropSiteWindow(QWidget):
                     out.write(line)
                 else: 
                     if archiveImage:
-                        try: os.rename(os.path.join(IMAGE_FOLDER_PATH, currentItems[1]), os.path.join(IMAGE_FOLDER_PATH, '.' + currentItems[1]))
-                        except FileNotFoundError: print('File Not Found:::' + currentItems[1])
+                        self.archiveTab(currentItems[1], currentItems[0])
         
-        if archiveImage:
-            # APPEND URL TO FILE AND CHECK IF THERE ARE OVER 20 ENTRIED IF SO REMOVE ONE ENTRY
-            with open('.tabs.txt', 'a+') as f:
-                f.seek(0)
-                lines = f.readlines()
-                if len(lines) > 20:
-                    f.seek(0)
-                    f.truncate(0)
-                    for i in range(1, len(lines)):
-                        f.write(lines[i])
-                # CHECK FOR DUPLICATE
-                duplicate = False
-                for line in lines:
-                    if line.split(' ')[0] == tab.url:
-                        duplicate = True
-                if not duplicate:
-                    f.write(tab.url + ' ' + '.' + tab.imagePath + '\n')
+        #if archiveImage:
+        #    # APPEND URL TO FILE AND CHECK IF THERE ARE OVER 20 ENTRIED IF SO REMOVE ONE ENTRY
+        #    with open('.tabs.txt', 'a+') as f:
+        #        f.seek(0)
+        #        lines = f.readlines()
+        #        if len(lines) > 20:
+        #            f.seek(0)
+        #            f.truncate(0)
+        #            for i in range(1, len(lines)):
+        #                f.write(lines[i])
+        #        # CHECK FOR DUPLICATE
+        #        duplicate = False
+        #        for line in lines:
+        #            if line.split(' ')[0] == tab.url:
+        #                duplicate = True
+        #        if not duplicate:
+        #            f.write(tab.url + ' ' + '.' + tab.imagePath + '\n')
 
 
     def addTabToList(self, tab, tabNo):
@@ -269,8 +268,16 @@ class DropSiteWindow(QWidget):
     
     def archiveTab(self, imagePath, url):
         os.rename(os.path.join(IMAGE_FOLDER_PATH, imagePath), os.path.join(IMAGE_FOLDER_PATH, '.'+imagePath))
-        with open('.tabs.txt', 'a') as f:
-            f.write(url + ' .' + imagePath + '\n')
+        with open('.tabs.txt', 'a+') as f:
+            f.seek(0)
+            lines = f.readlines()
+            # CHECK FOR DUPLICATE
+            duplicate = False
+            for line in lines:
+                if line.split(' ')[0] == url:
+                    duplicate = True
+            if not duplicate:
+                f.write(url + ' ' + '.' + imagePath + '\n')
     
     def close(self):
         self.driver.quit()
