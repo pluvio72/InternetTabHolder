@@ -111,14 +111,14 @@ class DropArea(QLabel):
     #IF NOT TAKEN GET IMAGE AND SAVE TAB
     def dropEvent(self, event):
         if not self.taken:
+            self.setText('Loading...')
             self.taken = True
             self.url = event.mimeData().text()
-            self.setText('Loading...')
             self.setBackgroundRole(QPalette.Dark)
 
             ### HANDLE EXCEPTIONS WERE PAGES ARE BLOCKED OR NETWORK DOESNT WORK ETC
             ### WHEN GOING BACK ONLINE LOAD IMAGE??
-            self.downloadImage(self.url)
+            self.downloadImage(self.url, (self.url.replace('/', ''))+'.png')
             self.setLocalPixmap()
             self.saveTab()
             event.acceptProposedAction()
@@ -154,6 +154,7 @@ class DropArea(QLabel):
         self.taken = True
         self.url = url
 
+        ### BUG: WHEN LOADING ARCHIVED TAB FROM MANUAL ADD
         loaded = False
         if os.path.isfile('.tabs.txt') and os.path.getsize('.tabs.txt') > 0:
             with open('.tabs.txt', 'r') as f:
@@ -161,58 +162,25 @@ class DropArea(QLabel):
                 for line in lines:
                     cur = line.split('\n')[0]
                     curUrl = cur.split(' ')[0]
-                    imagePath = cur.split(' ')[1]
+                    curPath = cur.split(' ')[1]
                     if curUrl == url:
-                        if not os.path.isfile(os.path.join(self.imageFolder, imagePath[1:])): os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
-                        self.imagePath = imagePath[1:]                        
+                        if not os.path.isfile(os.path.join(self.imageFolder, curPath[1:])): os.rename(os.path.join(self.imageFolder, curPath), os.path.join(self.imageFolder, curPath[1:]))
+                        self.imagePath = curPath[1:]  
                         loaded = True
         if not loaded:
             self.imagePath = imagePath
-        
+
         # CONNECTED TO NEWTAB
         if addTabAfter: self.imageLoaded.emit(False)
-        self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath))
+        self._pixmap = QPixmap(os.path.join(self.imageFolder, self.imagePath))
         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
         self.tabAdded.emit(self, self.tabNumber)
         self.addCloseButton()
 
-    # LOAD FUNCTION OVERLOAD WITH ONLY URL FOR MANUALLY ADDNG TAB
-    #def loadFromUrl(self, url):
-    #    self.taken = True
-    #    self.url = url
-    #    self.imagePath = str(url.replace('/','') + '.png')
-
-    #    loaded = False
-    #    if os.path.isfile('.tabs.txt') and os.path.getsize('.tabs.txt') > 0:
-    #        with open('.tabs.txt', 'r') as f:
-    #            lines = f.readlines()
-    #            for line in lines:
-    #                cur = line.split('\n')[0]
-    #                curUrl = cur.split(' ')[0]
-    #                imagePath = cur.split(' ')[1]
-    #                if curUrl == url:
-    #                    if not os.path.isfile(os.path.join(self.imageFolder, imagePath[1:])):
-    #                        os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
-    #                    self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath[1:]), '1')
-    #                    self.imagePath = imagePath[1:]
-    #                    self.url = url
-    #                    self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
-    #                    self.imageLoaded.emit(False)
-    #                    loadded = True
-    #                    print('Loaded URL from file:::')
-    #    if not loaded:
-    #        if not self.checkDuplicate(url):
-    #            self.driver.get(url)
-    #            self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
-    #            self.setLocalPixmap()
-    #            print('Loaded URL from driver:::')
-    #    self.tabAdded.emit(self, self.tabNumber)
-    #    self.saveTab()
-    #    self.addCloseButton()
-
     # DOWNLOAD IMAGE FROM DRIVER
-    def downloadImage(self, url):
-        self.imagePath = str(url).replace('/', '') + '.png'
+    def downloadImage(self, url, imagePath):
+        #self.imagePath = str(url).replace('/', '') + '.png'
+        self.imagePath = imagePath
         if not self.checkDuplicate(url):
             self.driver.get(url)
             self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
@@ -223,7 +191,7 @@ class DropArea(QLabel):
                 for line in lines:
                     if line.split(' ')[0] == url:
                         imagePath = line.split('\n')[0].split(' ')[1]
-                        os.rename(os.path.join(os.imageFolder, imagePath), os.path.join(os.imageFolder, imagePath[1:]))
+                        os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
                         self.imagePath = imagePath[1:]
     
     # SET PIXMAP FROM IMAGEPATH MEMBER VARIABLE AND ADD NEW TAB AFTER

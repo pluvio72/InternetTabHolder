@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QPalette, QColor, QIcon
-from constants import tabCount, tabRows, tabList, tabsPerRow, IMAGE_WIDTH, IMAGE_HEIGHT, ASPECT_RATIO, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ABSOLUTE_IMAGE_FOLDER_PATH, IMAGE_FOLDER_PATH
+from constants import tabCount, loadedTabCount, tabRows, tabList, tabsPerRow, IMAGE_WIDTH, IMAGE_HEIGHT, ASPECT_RATIO, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ABSOLUTE_IMAGE_FOLDER_PATH, IMAGE_FOLDER_PATH
 from droparea import DropArea
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -25,6 +25,8 @@ class DropSiteWindow(QWidget):
         ### MAYBE RUN CHECK WITH OS.POPEN IF CHROMEDRIVER INSTANCES ARE MORE THEN 5 OR SO AND KILL THEM
         ### MAKE WINDOW DIALOG SEPARATE CLASS
         ### MAKE CUSTOM WIDGET FOR CLOSE BUTTON
+        ### AFTER DELETING TAB TAB COUNT IS TWO WHEN ADDING IT BECOMES TAB AFTER EMPTY TAB SO I NEED TO RETHINK THE LOGIC
+        ### ADD SUPPORT FOR DIFFERENT PAGES OF TABS AND RENAMING THEM
         ###
 
         # SETUP THUMBNAIL FOLDER 
@@ -61,12 +63,12 @@ class DropSiteWindow(QWidget):
         self.setLayout(self.mainLayout)
 
         # IF TAB FILE EXISTS REMAKE TABS
-        path = os.path.join(os.getcwd(), 'tabs.txt')
-        exists = os.path.isfile(path)
+        self.tabFilePath = os.path.join(os.getcwd(), 'tabs.txt')
+        exists = os.path.isfile(self.tabFilePath)
         size = 0
-        if exists: size = os.path.getsize(path)
+        if exists: size = os.path.getsize(self.tabFilePath)
         if size > 0 and exists:
-            self.loadTabs(path)
+            self.loadTabs(self.tabFilePath)
         else: self.newTab(False)
     
     def loadTabs(self, path):
@@ -78,14 +80,17 @@ class DropSiteWindow(QWidget):
                 url = currentItems[0]
                 imagePath = currentItems[1]
                 tabNumber = currentItems[2]
+
+                tab = self.newTab()
+                self.loadTabData(tab, url, imagePath)
                 # IF ITS LAST TAB ADD EMPTY TAB AFTER
                 if index == len(data)-1:
-                    self.newTab(True, url, imagePath, True)
-                else:
-                    self.newTab(True, url, imagePath, False)
+                    self.newTab()
 
-    def newTab(self, load=False, url=None, imagePath=None, addTabAfter=False):
+    def newTab(self):
         global tabCount
+        global loadedTabCount
+        global tabList
         global tabsPerRow
         if (tabCount % tabsPerRow) == 0:
             self.currentRow = QHBoxLayout()
@@ -96,16 +101,20 @@ class DropSiteWindow(QWidget):
             tabRows.append(self.currentRow)
 
         tabCount += 1
-        drp = DropArea(tabCount, self.driver, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ASPECT_RATIO, ABSOLUTE_IMAGE_FOLDER_PATH)
+        drp = DropArea(loadedTabCount, self.driver, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ASPECT_RATIO, ABSOLUTE_IMAGE_FOLDER_PATH)
         drp.imageLoaded.connect(self.newTab)
         drp.tabDeleted.connect(lambda: self.deleteTab(drp))
         drp.tabAdded.connect(self.addTabToList)
         drp.tabReordered.connect(self.reorderTab)
         drp.destroyed.connect(self.reorganizeTabList)
         self.currentRow.addWidget(drp)
-
-        # IF ITS A NEW TAB LOAD IAMGE AND URL
-        if load: drp.load(url, imagePath, addTabAfter)
+        return drp
+    
+    def loadTabData(self, tab, url, imagePath):
+        global loadedTabCount
+        tab.load(url, imagePath)
+        loadedTabCount += 1
+        
 
     def deleteTab(self, tab):
         global tabCount
@@ -284,4 +293,5 @@ class DropSiteWindow(QWidget):
     
     def close(self):
         self.driver.quit()
+        print('Exited')
         sys.exit(0)

@@ -3,6 +3,7 @@ import os
 tabList = []
 tabRows = []
 tabCount = 0
+loadedTabCount = 0
 tabsPerRow = 3
 
 IMAGE_WIDTH = 1920
