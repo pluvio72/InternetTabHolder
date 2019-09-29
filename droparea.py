@@ -9,10 +9,10 @@ MIN_FOR_CLOSE = 100
 
 class DropArea(QLabel):
     # INITIALIZE SIGNALS
-    imageLoaded = pyqtSignal(bool)
-    tabDeleted = pyqtSignal(QWidget)
-    tabAdded = pyqtSignal(QWidget, int)
     tabReordered = pyqtSignal(QWidget, int)
+    tabAdded = pyqtSignal(QWidget, int)
+    tabDeleted = pyqtSignal(QWidget)
+    imageLoaded = pyqtSignal()
     
     def __init__(self, tabNumber, driver, minWidth, minHeight, aspectRatio, imageFolder):
         super().__init__()
@@ -41,14 +41,16 @@ class DropArea(QLabel):
         self.setMouseTracking(True)
 
         self.tabNumber = tabNumber
-        self.clear()
+        self.defaultTab('Drag URL Here')
 
+    # ON MOUSE ENTER
     def enterEvent(self, event):
         if self.taken:
             self.setToolTip(self.url)
             self.setToolTipDuration(1000)
         else: self.setBackgroundRole(QPalette.Highlight)
     
+    # ON MOUSE LEAVE
     def leaveEvent(self, event):
         if not self.taken: self.setBackgroundRole(QPalette.Dark)
 
@@ -67,8 +69,7 @@ class DropArea(QLabel):
         # IF X/Y DELTA GREATER THAN RESPECTIVE MINS REORDER/DELETE
         if yDiff > MIN_FOR_CLOSE or abs(xDiff) > self.sizeHint().width():
             # IF Y DELTA GREATER THAN MIN CLOSE/DELETE TAB
-            if yDiff > MIN_FOR_CLOSE:
-                self.tabDeleted.emit(self)
+            if yDiff > MIN_FOR_CLOSE:self.tabDeleted.emit(self)
             # IF X DELTA GREATER THAN TAB WIDTH REORDER TAB
             elif abs(xDiff) > self.sizeHint().width():
                 if self.taken:
@@ -82,7 +83,6 @@ class DropArea(QLabel):
                         parent = self.parent().layout().itemAt(0)
                         parent.removeWidget(self)
                         parent.insertWidget(index + tabsToSwap, self)
-                    
                         # EMIT SIGNAL SO LIST CAN BE REORGANIZED AND CHAGNES SAVED TO FILE
                         self.tabReordered.emit(self, tabsToSwap)
         # OPEN TAB IN BROWSER OR IF EMPTY ENTER URL MANUALLY
@@ -90,6 +90,7 @@ class DropArea(QLabel):
             if self.taken: QDesktopServices.openUrl(QUrl(self.url))
             else: dialog = AddTabDialog(self)
 
+        # RESET FRAME WHEN NOT CLICKED
         if self.taken:
             self.setFrameStyle(QFrame.NoFrame)
             self.setLineWidth(2)
@@ -97,38 +98,46 @@ class DropArea(QLabel):
     # SET TEXT TO DROP AND CHANGE COLOR
     def dragEnterEvent(self, event):
         if not self.taken:
-            self.setText('Drop Here')
-            self.setBackgroundRole(QPalette.Mid)
+            self.highlightTab()
             event.acceptProposedAction()
     
     def dragMoveEvent(self, event):
         event.setDropAction(Qt.MoveAction)
 
     def dragLeaveEvent(self, event):
-        self.clear() 
+        self.defaultTab() 
         event.accept()
     
     #IF NOT TAKEN GET IMAGE AND SAVE TAB
     def dropEvent(self, event):
         if not self.taken:
-            self.setText('Loading...')
+            self.defaultTab('Loading...')
             self.taken = True
             self.url = event.mimeData().text()
-            self.setBackgroundRole(QPalette.Dark)
 
-            ### HANDLE EXCEPTIONS WERE PAGES ARE BLOCKED OR NETWORK DOESNT WORK ETC
-            ### WHEN GOING BACK ONLINE LOAD IMAGE??
-            self.downloadImage(self.url, (self.url.replace('/', ''))+'.png')
+            ###
+            ### CHECK URL IN TABLIST -> USE LOCAL IMAGE
+            ### CHECK URL IN ARCHIVED TAB LIST -> USE LOCAL IMAGE
+            ### IF NEW URL -> DOWNLOAD IMAGE
+            ### SET PIXMAP FROM _PIXMAP
+            ### SAVE TAB TO FILE
+            ### ADD TAB TO TAB LIST
+            ###
+            ### MAKE SURE YOU CANT GET DUPLICATE TAB IN LIST AND DUPLICATE ARCHIVED TAB
+            ###
+            duplicateTab = self.checkDuplicateTab(self.url, 'tabs.txt')
+            duplicateArchiveTab = self.checkDuplicateTab(self.url, '.tabs.txt')
+            if duplicateTab: self.setDuplicateTab(self.url)
+            elif duplicateArchiveTab: self.setDuplicateTab(self.url)
+            else: self.downloadImage(self.url)
             self.setLocalPixmap()
             self.saveTab()
-            event.acceptProposedAction()
-            # CONNECTED TO ADD TAB TO LIST
             self.tabAdded.emit(self, self.tabNumber)
+            event.acceptProposedAction()
     
     # ON RESIZE UPDATE PIXMAP SIZE
     def resizeEvent(self, e):
-        if self.pixmap() != None:
-            self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        if self.pixmap() != None: self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
         self.setFixedHeight(self.sizeHint().height())
 
     # OVERLOAD SIZEHINT SO IT GETS SIZE OF PARENT LAYOUT CHILDREN / PARENT LAYOUT WIDTH
@@ -150,69 +159,71 @@ class DropArea(QLabel):
         button.clicked.connect(lambda: self.tabDeleted.emit(self))
 
     # LOAD TAB PIXMAP AND SET CLASS VARIABLES
-    def load(self, url, imagePath, addTabAfter):
+    def load(self, url, imagePath):
         self.taken = True
         self.url = url
 
         ### BUG: WHEN LOADING ARCHIVED TAB FROM MANUAL ADD
-        loaded = False
-        if os.path.isfile('.tabs.txt') and os.path.getsize('.tabs.txt') > 0:
+        setImagePath = False
+        if self.archivedTabFileExists():
             with open('.tabs.txt', 'r') as f:
-                lines = f.readlines()
-                for line in lines:
-                    cur = line.split('\n')[0]
-                    curUrl = cur.split(' ')[0]
-                    curPath = cur.split(' ')[1]
-                    if curUrl == url:
-                        if not os.path.isfile(os.path.join(self.imageFolder, curPath[1:])): os.rename(os.path.join(self.imageFolder, curPath), os.path.join(self.imageFolder, curPath[1:]))
-                        self.imagePath = curPath[1:]  
-                        loaded = True
-        if not loaded:
-            self.imagePath = imagePath
-
-        # CONNECTED TO NEWTAB
-        if addTabAfter: self.imageLoaded.emit(False)
+                for line in f:
+                    currentUrl = line.split('\n')[0].split(' ')[0]
+                    currentPath = line.split('\n')[0].split(' ')[1]
+                    if currentUrl == url:
+                        if not os.path.isfile(os.path.join(self.imageFolder, currentPath[1:])): os.rename(os.path.join(self.imageFolder, currentPath), os.path.join(self.imageFolder, currentPath[1:]))
+                        self.imagePath = currentPath[1:]  
+                        setImagePath = True
+        if not setImagePath: self.imagePath = imagePath
         self._pixmap = QPixmap(os.path.join(self.imageFolder, self.imagePath))
         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
         self.tabAdded.emit(self, self.tabNumber)
         self.addCloseButton()
 
     # DOWNLOAD IMAGE FROM DRIVER
-    def downloadImage(self, url, imagePath):
-        #self.imagePath = str(url).replace('/', '') + '.png'
-        self.imagePath = imagePath
-        if not self.checkDuplicate(url):
-            self.driver.get(url)
-            self.driver.save_screenshot(os.path.join(self.imageFolder, self.imagePath))
-        
-        if self.checkArchivedTabsExists():
-            with open('.tabs.txt', 'r') as f:
-                lines = f.readlines()
-                for line in lines:
-                    if line.split(' ')[0] == url:
-                        imagePath = line.split('\n')[0].split(' ')[1]
-                        os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
-                        self.imagePath = imagePath[1:]
+    def downloadImage(self, url):
+        self.imagePath = str(url).replace('/', '') + '.png'
+        self.driver.get(url)
+        path = os.path.join(self.imageFolder, self.imagePath)
+        self.driver.save_screenshot(path)
+        self._pixmap = QPixmap(path, '1')
     
-    # SET PIXMAP FROM IMAGEPATH MEMBER VARIABLE AND ADD NEW TAB AFTER
+    # SET PIXMAP FROM _PIXMAP
     def setLocalPixmap(self):
-        self._pixmap = QPixmap(os.path.join(self.imageFolder, self.imagePath), '1')
         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
-        self.imageLoaded.emit(False)
+        self.imageLoaded.emit()
 
     # CHECK IF FILE EXISTS AND IF ITS NOT EMPTY
-    def checkArchivedTabsExists(self):
+    def archivedTabFileExists(self):
         exists = os.path.isfile(os.path.join(os.getcwd(), '.tabs.txt'))
         notEmpty = False
         if exists:
             notEmpty = True if (os.path.getsize(os.path.join(os.getcwd(), '.tabs.txt')) > 0) else False
         return (exists and notEmpty)
 
-    def checkDuplicate(self, url):
-        for tab in constants.tabList:
-            if tab.url == url:
-                return True
+    def checkDuplicateTab(self, url, fileName):
+        with open(fileName, 'r') as f:
+            for line in f:
+                if url == line.split(' ')[0]: return True
         return False
+    
+    def setDuplicateTab(self, url):
+        with open('tabs.txt', 'r') as f:
+            for line in f:
+                if url == line.split(' ')[0]: 
+                    imagePath = line.split(' ')[1]
+                    self.imagePath = imagePath
+                    self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath), '1')
+    
+    def setDuplicateArchiveTab(self, url):
+        with open('.tabs.txt', 'r') as f:
+            for line in f:
+                if url == line.split(' ')[0]:
+                    imagePath = line.split(' ')[1]
+                    # RENAME IMAGE TO MAKE IT NOT HIDDEN
+                    os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
+                    self.imagePath = imagePath[1:]
+                    self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath), '1')
 
     # SAVE TAB ENTRY TO FILE
     def saveTab(self):
@@ -220,23 +231,10 @@ class DropArea(QLabel):
             info = self.url + ' ' + self.imagePath + ' ' + str(self.tabNumber) + '\n'
             f.write(info)
 
-    # CLEAR TAB AND SET TEXT
-    def clear(self):
-        self.setText('Drop URL')
+    def defaultTab(self, text):
+        self.setText(text)
         self.setBackgroundRole(QPalette.Dark)
-
-##class ThreadClass(QThread):
-##    done = pyqtSignal()
-##
-##    def __init__(self, url, parent=None):
-##        super(ThreadClass, self).__init__(parent)
-##        self.url = url
-##
-##    def run(self):
-##        options = Options()
-##        options.headless = True
-##        driver = webdriver.Firefox(options=options, executable_path='./geckodriver')
-##        driver.get(self.url)
-##        driver.save_screenshot('1.jpg')
-##        driver.quit()
-##        self.done.emit()
+    
+    def highlightTab(self):
+        self.setBackgroundRole(QPalette.Mid)
+        self.setText('Drop Here')

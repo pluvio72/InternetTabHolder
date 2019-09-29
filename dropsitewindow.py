@@ -28,10 +28,16 @@ class DropSiteWindow(QWidget):
         ### AFTER DELETING TAB TAB COUNT IS TWO WHEN ADDING IT BECOMES TAB AFTER EMPTY TAB SO I NEED TO RETHINK THE LOGIC
         ### ADD SUPPORT FOR DIFFERENT PAGES OF TABS AND RENAMING THEM
         ### IT MAY BE POSSIBLE TO REORGANIZE TAB NUMBERS WHEN DELETING THEM WHEN WRITING DELETED TAB OUT OF FILE
+        ### LOOK AT THREADING DRIVER
+        ### HANDLE EXCEPTIONS WERE PAGES ARE BLOCKED OR NETWORK DOESNT WORK ETC
+        ### WHEN GOING BACK ONLINE LOAD IMAGE??
+        ###
+        ### CHECKDUPLICATETAB CAN JUST USE CONSTANTS.TABLIST
+        ### MAKE STACK OVERFLOW POST ABOUT MAKING THE SET AND CHECK DUPLICATE TAB METHODS MORE GENERIC
         ###
 
         # SETUP THUMBNAIL FOLDER 
-        if not (os.path.isdir(ABSOLUTE_IMAGE_FOLDER_PATH)): os.mkdir(ABSOLUTE_IMAGE_FOLDER_PATH)
+        if not (os.path.isdir(constants.ABSOLUTE_IMAGE_FOLDER_PATH)): os.mkdir(constants.ABSOLUTE_IMAGE_FOLDER_PATH)
 
         self.clearingTabs = False
         self.acceptDrops = True
@@ -40,7 +46,7 @@ class DropSiteWindow(QWidget):
         options = Options()
         options.headless = True
         self.driver = webdriver.Chrome(options=options, executable_path='./chromedriver_77')
-        self.driver.set_window_size(IMAGE_WIDTH, IMAGE_HEIGHT)
+        self.driver.set_window_size(constants.IMAGE_WIDTH, constants.IMAGE_HEIGHT)
 
         # SETUP LAYOUTS
         self.mainLayout = QVBoxLayout()
@@ -154,10 +160,7 @@ class DropSiteWindow(QWidget):
         self.reorganizeTabFile()
 
     def reorganizeTabFile(self):
-        exists = os.path.isfile(self.tabFilePath)
-        size = 0
-        if exists: size = os.path.getsize(path)
-        if size > 0 and exists:
+        if os.path.isfile(self.tabFilePath) and os.path.getsize(self.tabFilePath) > 0:
             if not self.clearingTabs:
                 for index, tab in enumerate(tabList):
                     #TAB NUMBERS START AT 1

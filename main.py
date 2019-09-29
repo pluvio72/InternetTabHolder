@@ -29,7 +29,7 @@ class MainWindow(QMainWindow):
         file = menuBar.addMenu("Options")
         clearAction = QAction("Clear Tabs", self)
         clearAction.setShortcut("Ctrl+Shift+W")
-        clearAction.triggered.connect(centralWidget.clearTabs)
+        clearAction.triggered.connect(centralWidget.clear)
         file.addAction(clearAction)
         quitAction = QAction("Close", self)
         quitAction.setShortcut("Ctrl+Q")
