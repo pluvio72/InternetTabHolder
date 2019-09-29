@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QPalette, QColor, QIcon
-from constants import tabCount, loadedTabCount, tabRows, tabList, tabsPerRow, IMAGE_WIDTH, IMAGE_HEIGHT, ASPECT_RATIO, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ABSOLUTE_IMAGE_FOLDER_PATH, IMAGE_FOLDER_PATH
+import constants
 from droparea import DropArea
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -27,6 +27,7 @@ class DropSiteWindow(QWidget):
         ### MAKE CUSTOM WIDGET FOR CLOSE BUTTON
         ### AFTER DELETING TAB TAB COUNT IS TWO WHEN ADDING IT BECOMES TAB AFTER EMPTY TAB SO I NEED TO RETHINK THE LOGIC
         ### ADD SUPPORT FOR DIFFERENT PAGES OF TABS AND RENAMING THEM
+        ### IT MAY BE POSSIBLE TO REORGANIZE TAB NUMBERS WHEN DELETING THEM WHEN WRITING DELETED TAB OUT OF FILE
         ###
 
         # SETUP THUMBNAIL FOLDER 
@@ -88,110 +89,72 @@ class DropSiteWindow(QWidget):
                     self.newTab()
 
     def newTab(self):
-        global tabCount
-        global loadedTabCount
-        global tabList
-        global tabsPerRow
-        if (tabCount % tabsPerRow) == 0:
+        if (constants.tabCount % constants.tabsPerRow) == 0:
             self.currentRow = QHBoxLayout()
             self.currentRow.setAlignment(Qt.AlignTop | Qt.AlignLeft)
             self.currentRow.setSpacing(3)
             self.currentRow.setSizeConstraint(QLayout.SetMinimumSize)
             self.scrollWidgetLayout.insertLayout(self.scrollWidgetLayout.layout().count(), self.currentRow)
-            tabRows.append(self.currentRow)
+            constants.tabRows.append(self.currentRow)
 
-        tabCount += 1
-        drp = DropArea(loadedTabCount, self.driver, MIN_TAB_WIDTH, MIN_TAB_HEIGHT, ASPECT_RATIO, ABSOLUTE_IMAGE_FOLDER_PATH)
+        constants.tabCount += 1
+        drp = DropArea(constants.tabCount, self.driver, constants.MIN_TAB_WIDTH, constants.MIN_TAB_HEIGHT, constants.ASPECT_RATIO, constants.ABSOLUTE_IMAGE_FOLDER_PATH)
         drp.imageLoaded.connect(self.newTab)
         drp.tabDeleted.connect(lambda: self.deleteTab(drp))
         drp.tabAdded.connect(self.addTabToList)
         drp.tabReordered.connect(self.reorderTab)
-        drp.destroyed.connect(self.reorganizeTabList)
+        drp.destroyed.connect(self.reorganizeTabFile)
         self.currentRow.addWidget(drp)
         return drp
     
     def loadTabData(self, tab, url, imagePath):
-        global loadedTabCount
         tab.load(url, imagePath)
-        loadedTabCount += 1
+        constants.loadedTabCount += 1
         
-
     def deleteTab(self, tab):
-        global tabCount
-
         if tab.taken:
-            if tabCount == 1:
-                tab.taken = False
-                tab.clear()
-            else:
-                tabCount -= 1
-                tabList.remove(tab)
-                tab.setParent(None) 
-                tab.deleteLater()
+            constants.tabCount -= 1
+            constants.tabList.remove(tab)
+            tab.setParent(None) 
+            tab.deleteLater()
 
             # REMOVE ENTRY FROM SAVED TABS FILE
             fileData = []
             with open('tabs.txt', 'r') as inp:
                 fileData = inp.readlines()
 
-            # CHECK IF THERE IS DUPLICATE TAB IF SO DON'T DELETE IMAGE
-            archiveImage = True
-            for tabItem in tabList:
-                if tabItem.url == tab.url:
-                    archiveImage = False
+            # CHECK IF THERE IS DUPLICATE TAB IF SO DON'T ARCHIVE
+            archiveImage = self.checkDuplicateInTabList(tab.url)
+            if archiveImage: self.archiveTab(currentItems[1], currentItems[0])
 
             with open('tabs.txt', 'w') as out:
+                # FILE LAYOUT EACH LINE -> (URL IMAGE_PATH TAB_NUMBER)
                 for line in fileData:
-                    # CURRENT ITEMS LAYOUT -> (URL IMAGE_PATH TAB_NUMBER)
                     currentItems = line.split(' ')
                     tabNum = int(currentItems[2])
-                    if not (tabNum == tab.tabNumber): 
-                        out.write(line)
-                    else: 
-                        if archiveImage:
-                            self.archiveTab(currentItems[1], currentItems[0])
-            
-            #if archiveImage:
-            #    # APPEND URL TO FILE AND CHECK IF THERE ARE OVER 20 ENTRIED IF SO REMOVE ONE ENTRY
-            #    with open('.tabs.txt', 'a+') as f:
-            #        f.seek(0)
-            #        lines = f.readlines()
-            #        if len(lines) > 20:
-            #            f.seek(0)
-            #            f.truncate(0)
-            #            for i in range(1, len(lines)):
-            #                f.write(lines[i])
-            #        # CHECK FOR DUPLICATE
-            #        duplicate = False
-            #        for line in lines:
-            #            if line.split(' ')[0] == tab.url:
-            #                duplicate = True
-            #        if not duplicate:
-            #            f.write(tab.url + ' ' + '.' + tab.imagePath + '\n')
+                    # IF CURRENT LINE IS NOT TAB TO BE DELETED WRITE LINE
+                    if not (tabNum == tab.tabNumber): out.write(line)
 
-
-    def addTabToList(self, tab, tabNo):
-        global tabList
-        if len(tabList) <= tabNo:
-            tabList.append(tab)
-        else:
-            tabList[tabNo] = tab
+    def addTabToList(self, tab, tabNum):
+        if len(constants.tabList) <= tabNum: constants.tabList.append(tab)
+        else: constants.tabList[tabNum] = tab
+    
+    def checkDuplicateInTabList(self, url):
+        for tab in constants.tabList:
+            if tab.url == url: return True
+        return False
     
     def reorderTab(self, tab, swapValue):
-        global tabList
+        # GET INDEX OF TAB IN TAB LIST
         index = tabList.index(tab)
         # SWAP VALUE = SHIFT IN TABS E.G. -1 FOR ONE LEFT
         newIndex = index + swapValue
         tabList.remove(tab)
         tabList.insert(newIndex, tab)
-        self.reorganizeTabList()
+        self.reorganizeTabFile()
 
-    def reorganizeTabList(self):
-        global tabList
-        global tabRows
-
-        path = os.path.join(os.getcwd(), 'tabs.txt')
-        exists = os.path.isfile(path)
+    def reorganizeTabFile(self):
+        exists = os.path.isfile(self.tabFilePath)
         size = 0
         if exists: size = os.path.getsize(path)
         if size > 0 and exists:
@@ -206,90 +169,78 @@ class DropSiteWindow(QWidget):
                     currentTab = 1
                     finalStringData = ''
                     for line in lines:
-                        l = line.split('\n')[0]
-                        currentItems = l.split(' ')
-                        currentString = ''
+                        currentItems = line.split('\n')[0].split(' ')
                         # REORGANIZING AFTER DELETING A TAB
-                        if(currentTab != int(currentItems[2])):
-                            currentString += currentItems[0] + ' ' + tabList[currentTab-1].imagePath + ' ' + str(currentTab) + '\n'
+                        if(currentTab != int(currentItems[2])): finalStringData += currentItems[0] + ' ' + tabList[currentTab-1].imagePath + ' ' + str(currentTab) + '\n'
                         # REORGANIZING AFTER REORDERING A TAB
                         elif(currentItems[0] != tabList[currentTab-1].url):
                             current = tabList[currentTab-1]
-                            currentString += current.url + ' ' + current.imagePath + ' ' + str(current.tabNumber) + '\n'
-                        else:
-                            currentString += line
+                            finalStringData += current.url + ' ' + current.imagePath + ' ' + str(current.tabNumber) + '\n'
+                        else: finalStringData += line
                         currentTab += 1
-                        finalStringData += currentString
 
                     # SEEK BEGINNING -> CLEAR FILE -> WRITE DATA (TRUNCATE SETS FILE SIZE TO MAX (0))
                     f.seek(0)
                     f.truncate(0)
                     f.write(finalStringData)
+        self.checkLayouts()
+    
+    def checkLayouts(self):
+        #IF ANY LAYOUTS HAVE < 3 CHILDREN REORGANIZE THE WIDGETS
+        complete = False
+        while not complete:
+            for i in range(0, len(constants.tabRows)-1):
+                if constants.tabRows[i].count() < 3:
+                    child = constants.tabRows[i + 1].itemAt(0)
+                    constants.tabRows[i + 1].removeItem(child)
+                    constants.tabRows[i].addItem(child)
+            complete = True
                 
-                #IF ANY LAYOUTS HAVE < 3 CHILDREN REORGANIZE THE WIDGETS
-                complete = False
-                while not complete:
-                    for i in range(0, len(tabRows)-1):
-                        if tabRows[i].count() < 3:
-                            child = tabRows[i + 1].itemAt(0)
-                            tabRows[i + 1].removeItem(child)
-                            tabRows[i].addItem(child)
-                    complete = True
-                
-                # IF CURRENT ROW HAS NO CHILDREN REMOVE IT AND SET IT TO PREVIOUS ROW
-                if self.currentRow.count() == 0:
-                    tabRows.remove(self.currentRow)
-                    self.currentRow.deleteLater()
-                    self.currentRow = tabRows[len(tabRows)-1]
+        # IF CURRENT ROW HAS NO CHILDREN REMOVE IT AND SET IT TO PREVIOUS ROW
+        if self.currentRow.count() == 0:
+            constants.tabRows.remove(self.currentRow)
+            self.currentRow.deleteLater()
+            self.currentRow = constants.tabRows[len(constants.tabRows)-1]
 
-    def clearTabs(self):
-        global tabCount
-        global tabList
-        global tabRows
-
+    def clear(self):
         self.clearingTabs = True
-        for i in range(len(tabList)-1, -1, -1):
-            tabList[i].setParent(None) 
-            tabList[i].deleteLater()
+        for i in range(len(constants.tabList)-1, -1, -1):
+            constants.tabList[i].setParent(None) 
+            constants.tabList[i].deleteLater()
 
             # REMOVE ENTRY FROM SAVED TABS FILE
-            fileData = []
+            fileData = ''
             with open('tabs.txt', 'r') as inp:
-                fileData = inp.readlines()
+                fileData += inp.readlines()
 
             with open('tabs.txt', 'w') as out:
                 for line in fileData:
-                    # CURRENT ITEMS LAYOUT -> (URL IMAGE_PATH TAB_NUMBER)
                     currentItems = line.split(' ')
-                    self.archiveTab(currentItems[1], currentItems[0])
-
-            tabList.remove(tabList[i])
-        os.remove(os.path.join(os.getcwd(), 'tabs.txt'))
-        tabCount = 0
+                    self.archiveTab(currentItems[0], currentItems[1])
+            constants.tabList.remove(constants.tabList[i])
+        os.remove(self.tabFilePath)
+        constants.tabCount = 0
 
         # REMOVE ALL ROWS FROM LIST EXCEPT FIRST AND CLEAR TABS
-        for x in range(len(tabRows)-1, -1, -1):
-            if tabRows[x].count() > 0:
-                tabRows[x].itemAt(0).widget().deleteLater()
-            if x == 0:
-                tabRows[x].destroyed.connect(lambda: self.newTab(False))
-            tabRows[x].deleteLater()
-            tabRows.remove(tabRows[x])
-        
+        for x in range(len(constants.tabRows)-1, -1, -1):
+            if constants.tabRows[x].count() > 0: constants.tabRows[x].itemAt(0).widget().deleteLater()
+            if x == 0: constants.tabRows[x].destroyed.connect(self.newTab)
+            constants.tabRows[x].deleteLater()
+            constants.tabRows.remove(constants.tabRows[x])
         self.clearingTabs = False
     
-    def archiveTab(self, imagePath, url):
-        os.rename(os.path.join(IMAGE_FOLDER_PATH, imagePath), os.path.join(IMAGE_FOLDER_PATH, '.'+imagePath))
+    def archiveTab(self, url, imagePath):
+        try: os.rename(os.path.join(IMAGE_FOLDER_PATH, imagePath), os.path.join(IMAGE_FOLDER_PATH, '.'+imagePath))
+        except FileNotFoundError: print('RENAMING:::File Not Found:::' + imagePath)
+
         with open('.tabs.txt', 'a+') as f:
             f.seek(0)
             lines = f.readlines()
-            # CHECK FOR DUPLICATE
             duplicate = False
             for line in lines:
                 if line.split(' ')[0] == url:
                     duplicate = True
-            if not duplicate:
-                f.write(url + ' ' + '.' + imagePath + '\n')
+            if not duplicate: f.write(url + ' ' + '.' + imagePath + '\n')
     
     def close(self):
         self.driver.quit()
