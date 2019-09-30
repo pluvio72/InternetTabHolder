@@ -35,6 +35,7 @@ class DropSiteWindow(QWidget):
         ### CHECKDUPLICATETAB CAN JUST USE CONSTANTS.TABLIST
         ### MAKE STACK OVERFLOW POST ABOUT MAKING THE SET AND CHECK DUPLICATE TAB METHODS MORE GENERIC
         ### REIMPLEMENT LOAD FUNCTION TO MAKE A MIX OF CHECK AND SET DUPLICATE TABS ETC.
+        ### DELETE ARCHIVED TAB FROM FILE WHEN READDING
         ###
 
         # SETUP THUMBNAIL FOLDER 
@@ -111,16 +112,17 @@ class DropSiteWindow(QWidget):
         drp.tabAdded.connect(self.addTabToList)
         drp.tabReordered.connect(self.reorderTab)
         drp.destroyed.connect(self.reorganizeTabFile)
+        constants.emptyTab = drp
         self.currentRow.addWidget(drp)
         return drp
     
     def loadTabData(self, tab, url, imagePath):
         tab.load(url, imagePath)
-        constants.loadedTabCount += 1
         
     def deleteTab(self, tab):
         if tab.taken:
             constants.tabCount -= 1
+            constants.loadedTabCount -= 1
             constants.tabList.remove(tab)
             tab.setParent(None) 
             tab.deleteLater()
@@ -148,19 +150,19 @@ class DropSiteWindow(QWidget):
     
     def reorderTab(self, tab, swapValue):
         # GET INDEX OF TAB IN TAB LIST
-        index = tabList.index(tab)
+        index = constants.tabList.index(tab)
         # SWAP VALUE = SHIFT IN TABS E.G. -1 FOR ONE LEFT
         newIndex = index + swapValue
-        tabList.remove(tab)
-        tabList.insert(newIndex, tab)
+        constants.tabList.remove(tab)
+        constants.tabList.insert(newIndex, tab)
         self.reorganizeTabFile()
 
     def reorganizeTabFile(self):
         if os.path.isfile(self.tabFilePath) and os.path.getsize(self.tabFilePath) > 0:
             if not self.clearingTabs:
                 for index, tab in enumerate(constants.tabList):
-                    #TAB NUMBERS START AT 1
                     tab.tabNumber = index+1
+                constants.emptyTab.tabNumber = len(constants.tabList)+1
 
                 # REORDER TABS IN THE SAVED TABS FILE SO THEY HAVE CORRECT TAB NUMBER
                 with open('tabs.txt', 'r+') as f:

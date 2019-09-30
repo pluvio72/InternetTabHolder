@@ -61,7 +61,7 @@ class DropArea(QLabel):
             self.setLineWidth(5)
     
     # IF DRAG UP REMOVE TAB, IF CLICK OPEN URL
-    def areaReleased(self, event):   
+    def areaReleased(self, event):
         self.endClick = event.pos()
         xDiff = self.endClick.x() - self.startClick.x()
         yDiff = abs(self.endClick.y() - self.startClick.y())
@@ -161,6 +161,8 @@ class DropArea(QLabel):
 
     # LOAD TAB PIXMAP AND SET CLASS VARIABLES
     def load(self, url, imagePath):
+        self.taken = True
+        self.url = url
         ### BUG: WHEN LOADING ARCHIVED TAB FROM MANUAL ADD
         setImagePath = False
         if self.checkFileExists('.tabs.txt'):
@@ -189,6 +191,7 @@ class DropArea(QLabel):
     # SET PIXMAP FROM _PIXMAP
     def setLocalPixmap(self):
         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
+        constants.loadedTabCount += 1
         self.imageLoaded.emit()
 
     # CHECK IF FILE EXISTS AND IF ITS NOT EMPTY
@@ -198,7 +201,8 @@ class DropArea(QLabel):
         if exists:
             notEmpty = True if (os.path.getsize(os.path.join(os.getcwd(), fileName)) > 0) else False
         return (exists and notEmpty)
-
+    
+    # CHECK IF URL IS IN FILENAME
     def checkDuplicateTab(self, url, fileName):
         if self.checkFileExists(fileName):
             with open(fileName, 'r') as f:
@@ -206,6 +210,7 @@ class DropArea(QLabel):
                     if url == line.split(' ')[0]: return True
         return False
     
+    # CHECK THROUGH TABS FILE AND SET IMAGEPATH AND PIXMAP IF URL EXISTS
     def setDuplicateTab(self, url):
         with open('tabs.txt', 'r') as f:
             for line in f:
@@ -214,6 +219,7 @@ class DropArea(QLabel):
                     self.imagePath = imagePath
                     self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath), '1')
     
+    # CHECK THROUGH ARCHIVED TABS FILE AND SET IMAGEPATH AND PIXMAP IF URL EXISTS
     def setDuplicateArchiveTab(self, url):
         with open('.tabs.txt', 'r') as f:
             for line in f:
@@ -229,6 +235,14 @@ class DropArea(QLabel):
         with open('tabs.txt', 'a') as f:
             info = self.url + ' ' + self.imagePath + ' ' + str(self.tabNumber) + '\n'
             f.write(info)
+
+    def setTaken(self, url):
+        self.taken = True
+        self.url = url
+    
+    def addedLoaded(self):
+        self.tabAdded.emit(self, self.tabNumber)
+        self.imageLoaded.emit()
 
     def defaultTab(self, text):
         self.setText(text)
