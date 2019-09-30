@@ -128,11 +128,12 @@ class DropArea(QLabel):
             duplicateTab = self.checkDuplicateTab(self.url, 'tabs.txt')
             duplicateArchiveTab = self.checkDuplicateTab(self.url, '.tabs.txt')
             if duplicateTab: self.setDuplicateTab(self.url)
-            elif duplicateArchiveTab: self.setDuplicateTab(self.url)
+            elif duplicateArchiveTab: self.setDuplicateArchiveTab(self.url)
             else: self.downloadImage(self.url)
             self.setLocalPixmap()
             self.saveTab()
             self.tabAdded.emit(self, self.tabNumber)
+            self.addCloseButton()
             event.acceptProposedAction()
     
     # ON RESIZE UPDATE PIXMAP SIZE
@@ -160,12 +161,9 @@ class DropArea(QLabel):
 
     # LOAD TAB PIXMAP AND SET CLASS VARIABLES
     def load(self, url, imagePath):
-        self.taken = True
-        self.url = url
-
         ### BUG: WHEN LOADING ARCHIVED TAB FROM MANUAL ADD
         setImagePath = False
-        if self.archivedTabFileExists():
+        if self.checkFileExists('.tabs.txt'):
             with open('.tabs.txt', 'r') as f:
                 for line in f:
                     currentUrl = line.split('\n')[0].split(' ')[0]
@@ -194,17 +192,18 @@ class DropArea(QLabel):
         self.imageLoaded.emit()
 
     # CHECK IF FILE EXISTS AND IF ITS NOT EMPTY
-    def archivedTabFileExists(self):
-        exists = os.path.isfile(os.path.join(os.getcwd(), '.tabs.txt'))
+    def checkFileExists(self, fileName):
+        exists = os.path.isfile(os.path.join(os.getcwd(), fileName))
         notEmpty = False
         if exists:
-            notEmpty = True if (os.path.getsize(os.path.join(os.getcwd(), '.tabs.txt')) > 0) else False
+            notEmpty = True if (os.path.getsize(os.path.join(os.getcwd(), fileName)) > 0) else False
         return (exists and notEmpty)
 
     def checkDuplicateTab(self, url, fileName):
-        with open(fileName, 'r') as f:
-            for line in f:
-                if url == line.split(' ')[0]: return True
+        if self.checkFileExists(fileName):
+            with open(fileName, 'r') as f:
+                for line in f:
+                    if url == line.split(' ')[0]: return True
         return False
     
     def setDuplicateTab(self, url):
@@ -219,11 +218,11 @@ class DropArea(QLabel):
         with open('.tabs.txt', 'r') as f:
             for line in f:
                 if url == line.split(' ')[0]:
-                    imagePath = line.split(' ')[1]
+                    imagePath = line.split('\n')[0].split(' ')[1]
                     # RENAME IMAGE TO MAKE IT NOT HIDDEN
                     os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
                     self.imagePath = imagePath[1:]
-                    self._pixmap = QPixmap(os.path.join(self.imageFolder, imagePath), '1')
+                    self._pixmap = QPixmap(os.path.join(self.imageFolder, self.imagePath), '1')
 
     # SAVE TAB ENTRY TO FILE
     def saveTab(self):

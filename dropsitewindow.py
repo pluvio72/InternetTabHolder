@@ -34,6 +34,7 @@ class DropSiteWindow(QWidget):
         ###
         ### CHECKDUPLICATETAB CAN JUST USE CONSTANTS.TABLIST
         ### MAKE STACK OVERFLOW POST ABOUT MAKING THE SET AND CHECK DUPLICATE TAB METHODS MORE GENERIC
+        ### REIMPLEMENT LOAD FUNCTION TO MAKE A MIX OF CHECK AND SET DUPLICATE TABS ETC.
         ###
 
         # SETUP THUMBNAIL FOLDER 
@@ -76,7 +77,7 @@ class DropSiteWindow(QWidget):
         if exists: size = os.path.getsize(self.tabFilePath)
         if size > 0 and exists:
             self.loadTabs(self.tabFilePath)
-        else: self.newTab(False)
+        else: self.newTab()
     
     def loadTabs(self, path):
         with open(path, 'r') as f:
@@ -129,10 +130,6 @@ class DropSiteWindow(QWidget):
             with open('tabs.txt', 'r') as inp:
                 fileData = inp.readlines()
 
-            # CHECK IF THERE IS DUPLICATE TAB IF SO DON'T ARCHIVE
-            archiveImage = self.checkDuplicateInTabList(tab.url)
-            if archiveImage: self.archiveTab(currentItems[1], currentItems[0])
-
             with open('tabs.txt', 'w') as out:
                 # FILE LAYOUT EACH LINE -> (URL IMAGE_PATH TAB_NUMBER)
                 for line in fileData:
@@ -140,15 +137,14 @@ class DropSiteWindow(QWidget):
                     tabNum = int(currentItems[2])
                     # IF CURRENT LINE IS NOT TAB TO BE DELETED WRITE LINE
                     if not (tabNum == tab.tabNumber): out.write(line)
+            
+            # CHECK IF THERE IS DUPLICATE TAB IF SO DON'T ARCHIVE
+            dontArchiveImage = tab.checkDuplicateTab(tab.url, 'tabs.txt')
+            if not dontArchiveImage: self.archiveTab(tab.url, tab.imagePath)
 
     def addTabToList(self, tab, tabNum):
         if len(constants.tabList) <= tabNum: constants.tabList.append(tab)
         else: constants.tabList[tabNum] = tab
-    
-    def checkDuplicateInTabList(self, url):
-        for tab in constants.tabList:
-            if tab.url == url: return True
-        return False
     
     def reorderTab(self, tab, swapValue):
         # GET INDEX OF TAB IN TAB LIST
@@ -162,7 +158,7 @@ class DropSiteWindow(QWidget):
     def reorganizeTabFile(self):
         if os.path.isfile(self.tabFilePath) and os.path.getsize(self.tabFilePath) > 0:
             if not self.clearingTabs:
-                for index, tab in enumerate(tabList):
+                for index, tab in enumerate(constants.tabList):
                     #TAB NUMBERS START AT 1
                     tab.tabNumber = index+1
 
@@ -174,10 +170,10 @@ class DropSiteWindow(QWidget):
                     for line in lines:
                         currentItems = line.split('\n')[0].split(' ')
                         # REORGANIZING AFTER DELETING A TAB
-                        if(currentTab != int(currentItems[2])): finalStringData += currentItems[0] + ' ' + tabList[currentTab-1].imagePath + ' ' + str(currentTab) + '\n'
+                        if(currentTab != int(currentItems[2])): finalStringData += currentItems[0] + ' ' + constants.tabList[currentTab-1].imagePath + ' ' + str(currentTab) + '\n'
                         # REORGANIZING AFTER REORDERING A TAB
-                        elif(currentItems[0] != tabList[currentTab-1].url):
-                            current = tabList[currentTab-1]
+                        elif(currentItems[0] != constants.tabList[currentTab-1].url):
+                            current = constants.tabList[currentTab-1]
                             finalStringData += current.url + ' ' + current.imagePath + ' ' + str(current.tabNumber) + '\n'
                         else: finalStringData += line
                         currentTab += 1
@@ -233,7 +229,7 @@ class DropSiteWindow(QWidget):
         self.clearingTabs = False
     
     def archiveTab(self, url, imagePath):
-        try: os.rename(os.path.join(IMAGE_FOLDER_PATH, imagePath), os.path.join(IMAGE_FOLDER_PATH, '.'+imagePath))
+        try: os.rename(os.path.join(constants.IMAGE_FOLDER_PATH, imagePath), os.path.join(constants.IMAGE_FOLDER_PATH, '.'+imagePath))
         except FileNotFoundError: print('RENAMING:::File Not Found:::' + imagePath)
 
         with open('.tabs.txt', 'a+') as f:
