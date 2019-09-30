@@ -80,7 +80,7 @@ class DropArea(QLabel):
                     # IF NOT LEFT MOST TAB AND TRYING TO DRAG LEFT
                     if not (index == 0 and left):
                         #GET PARENT WIDGET AND MOVE TAB
-                        parent = self.parent().layout().itemAt(0)
+                        parent = constants.tabRows[int((self.tabNumber-1)/constants.tabsPerRow)].layout()
                         parent.removeWidget(self)
                         parent.insertWidget(index + tabsToSwap, self)
                         # EMIT SIGNAL SO LIST CAN BE REORGANIZED AND CHAGNES SAVED TO FILE

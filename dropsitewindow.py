@@ -148,6 +148,7 @@ class DropSiteWindow(QWidget):
         if len(constants.tabList) <= tabNum: constants.tabList.append(tab)
         else: constants.tabList[tabNum] = tab
     
+    # BUG: HWEN REORGANIZING ON SECOND ROW DRAGGING MIDDLE TO FIRST GOES TO FIRST ROW
     def reorderTab(self, tab, swapValue):
         # GET INDEX OF TAB IN TAB LIST
         index = constants.tabList.index(tab)
