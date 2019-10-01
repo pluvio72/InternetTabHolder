@@ -145,12 +145,13 @@ class DropArea(QLabel):
     def sizeHint(self):
         # WHEN CLEARING TABS SOMETIMES THE ROW IS NOT THERE WHEN RESIZE EVENT OCCURS
         if self.parent() != None:
-            hasAttr = hasattr(self.parent().layout().itemAt(0), "count")
-            if hasAttr:
-                count = self.parent().layout().itemAt(0).count()
-                width = self.parent().width() / count
-                if width >= self.minWidth:
-                    return QSize(width, width*self.aspectRatio)
+            if self.parent().layout().itemAt(0).count() > 0:
+                hasAttr = hasattr(self.parent().layout().itemAt(0), "count")
+                if hasAttr:
+                    count = self.parent().layout().itemAt(0).count()
+                    width = self.parent().width() / count
+                    if width >= self.minWidth:
+                        return QSize(width, width*self.aspectRatio)
         return QSize(self.minWidth, self.minHeight)
 
     def addCloseButton(self):

@@ -16,7 +16,6 @@ class DropSiteWindow(QWidget):
         ### CHECK ARCHIVED TAB FILE SIZE
         ### ADD SUPPORT FOR MULTIPLE PAGES OF TABS AND NAME THEM??
         ### QUICK START IN OPTIONS OR CHANGE OPTIONS TO FILE MENU
-        ### ADD OPTIONS TO CHANGE TABS PER ROW
         ### DONT DELETE PREVIOUSLY DELETED TABS KEEP IMAGE FILE IN _NAME AND _TABLIST CAN BE SHOWN IN MANUAL TAB ADD DIALOG
         ### RETHINK WHETHER YOU HAVE EMPTY TAB AS DROP AREA OR WHOLE WINDOW AS DROP AREA
         ### FAVOURITE TABS HIGHER
@@ -32,8 +31,9 @@ class DropSiteWindow(QWidget):
         ### HANDLE EXCEPTIONS WERE PAGES ARE BLOCKED OR NETWORK DOESNT WORK ETC
         ### WHEN GOING BACK ONLINE LOAD IMAGE??
         ###
+        ### ADD NEW CLASS FOR MANAGING DROPSITEWINDOW'S -> FOR MULTIPLE PAGES
+        ###
         ### CHECKDUPLICATETAB CAN JUST USE CONSTANTS.TABLIST
-        ### MAKE STACK OVERFLOW POST ABOUT MAKING THE SET AND CHECK DUPLICATE TAB METHODS MORE GENERIC
         ### REIMPLEMENT LOAD FUNCTION TO MAKE A MIX OF CHECK AND SET DUPLICATE TABS ETC.
         ### DELETE ARCHIVED TAB FROM FILE WHEN READDING
         ###
@@ -144,11 +144,23 @@ class DropSiteWindow(QWidget):
             dontArchiveImage = tab.checkDuplicateTab(tab.url, 'tabs.txt')
             if not dontArchiveImage: self.archiveTab(tab.url, tab.imagePath)
 
+    def archiveTab(self, url, imagePath):
+        try: os.rename(os.path.join(constants.IMAGE_FOLDER_PATH, imagePath), os.path.join(constants.IMAGE_FOLDER_PATH, '.'+imagePath))
+        except FileNotFoundError: print('RENAMING:::File Not Found:::' + imagePath)
+
+        with open('.tabs.txt', 'a+') as f:
+            f.seek(0)
+            lines = f.readlines()
+            duplicate = False
+            for line in lines:
+                if line.split(' ')[0] == url:
+                    duplicate = True
+            if not duplicate: f.write(url + ' ' + '.' + imagePath + '\n')
+
     def addTabToList(self, tab, tabNum):
         if len(constants.tabList) <= tabNum: constants.tabList.append(tab)
         else: constants.tabList[tabNum] = tab
-    
-    # BUG: HWEN REORGANIZING ON SECOND ROW DRAGGING MIDDLE TO FIRST GOES TO FIRST ROW
+
     def reorderTab(self, tab, swapValue):
         # GET INDEX OF TAB IN TAB LIST
         index = constants.tabList.index(tab)
@@ -231,18 +243,37 @@ class DropSiteWindow(QWidget):
             constants.tabRows.remove(constants.tabRows[x])
         self.clearingTabs = False
     
-    def archiveTab(self, url, imagePath):
-        try: os.rename(os.path.join(constants.IMAGE_FOLDER_PATH, imagePath), os.path.join(constants.IMAGE_FOLDER_PATH, '.'+imagePath))
-        except FileNotFoundError: print('RENAMING:::File Not Found:::' + imagePath)
+    def cleanClear(self):
+        for i in reversed(range(len(constants.tabRows))):
+            for j in reversed(range(constants.tabRows[i].count())):
+                constants.tabRows[i].itemAt(j).widget().setParent(None)
+        
+        constants.tabRows.clear()
+        constants.tabList.clear()
+        constants.emptyTab = None
+        constants.tabCount = 0
+        constants.loadedTabCount = 0
 
-        with open('.tabs.txt', 'a+') as f:
-            f.seek(0)
-            lines = f.readlines()
-            duplicate = False
-            for line in lines:
-                if line.split(' ')[0] == url:
-                    duplicate = True
-            if not duplicate: f.write(url + ' ' + '.' + imagePath + '\n')
+    
+    def cleanLoad(self):
+        with open('tabs.txt', 'r') as f:
+            for line in f:
+                current = line.split('\n')[0].split(' ')
+                url = current[0]
+                imagePath = current[1]
+                tabNumber = current[2]
+                drp = self.newTab()
+                drp.load(url, imagePath)
+                
+    
+    def changeTabsPerRow(self, number):
+        self.clearingTabs = True
+        constants.MIN_TAB_WIDTH *= (constants.tabsPerRow/number)
+        constants.MIN_TAB_HEIGHT *= (constants.tabsPerRow/number)
+        constants.tabsPerRow = number
+        self.cleanClear()
+        self.cleanLoad()
+        self.clearingTabs = False
     
     def close(self):
         self.driver.quit()

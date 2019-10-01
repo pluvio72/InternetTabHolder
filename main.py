@@ -24,20 +24,60 @@ class MainWindow(QMainWindow):
         self.setMouseTracking(True)
 
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.centralWidget = centralWidget
+        self.createMenu()
 
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+
+    def createMenu(self):
         menuBar = self.menuBar()
-        file = menuBar.addMenu("Options")
+        file = menuBar.addMenu("File")
+
+        newAction = QAction("New Page", self)
+        newAction.setShortcut("Ctrl+N")
+        #newAction.triggered.connect(self.centralWidget.newPage)
+        file.addAction(newAction)
+
         clearAction = QAction("Clear Tabs", self)
         clearAction.setShortcut("Ctrl+Shift+W")
-        clearAction.triggered.connect(centralWidget.clear)
+        clearAction.triggered.connect(self.centralWidget.clear)
         file.addAction(clearAction)
-        quitAction = QAction("Close", self)
+
+        self.changeTabMenu = file.addMenu("Tabs Per Row")
+        self.tabsPerRowList = []
+        a1 = QAction("3 Tabs", self)
+        a2 = QAction("4 Tabs", self)
+        a3 = QAction("5 Tabs", self)
+        a1.setShortcut("Alt+Shift+3")
+        a2.setShortcut("Alt+Shift+4")
+        a3.setShortcut("Alt+Shift+5")
+        self.changeTabMenu.addAction(a1)
+        self.changeTabMenu.addAction(a2)
+        self.changeTabMenu.addAction(a3)
+        self.tabsPerRowList.append(a1)
+        self.tabsPerRowList.append(a2)
+        self.tabsPerRowList.append(a3)
+
+        for i in range(len(self.tabsPerRowList)):
+            self.tabsPerRowList[i].setCheckable(True)
+        self.tabsPerRowList[0].setChecked(True)
+
+        self.tabsPerRowList[0].triggered.connect(lambda: self.changedTabsPerRow(0))
+        self.tabsPerRowList[1].triggered.connect(lambda: self.changedTabsPerRow(1))
+        self.tabsPerRowList[2].triggered.connect(lambda: self.changedTabsPerRow(2))
+
+        quitAction = QAction("&Close", self)
         quitAction.setShortcut("Ctrl+Q")
         quitAction.triggered.connect(self.close)
         file.addAction(quitAction)
-
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
     
+    def changedTabsPerRow(self, ind):
+        for i in range(len(self.tabsPerRowList)):
+            if not i == ind:
+                self.tabsPerRowList[i].setChecked(False)
+        self.tabsPerRowList[ind].setChecked(True)
+        self.centralWidget.changeTabsPerRow(ind + 3)
+
     def close(self):
         qApp.quit()
 
