@@ -1,5 +1,7 @@
 import os
 
+WINDOW_NAME = 'Internet Tab Holder '
+
 TABS_FILE_NAME = 'tabs_1.txt'
 ARCHIVED_TABS_FILE_NAME = '.tabs_1.txt'
 
@@ -12,11 +14,11 @@ MIN_TAB_HEIGHT = (int)(MIN_TAB_WIDTH*ASPECT_RATIO)
 ABSOLUTE_IMAGE_FOLDER_PATH = os.path.join(os.getcwd(), 'thumbnails')
 IMAGE_FOLDER_PATH = 'thumbnails'
 
-def tabFileName(pageNumber):
-    return 'tabs_' + str(pageNumber) + '.txt'
+def tabFileName(tab):
+    return str(tab.pageNumber) + '.txt'
 
-def archiveTabFileName(pageNumber):
-    return '.tabs_' + str(pageNumber) + '.txt'
+def archiveTabFileName(tab):
+    return '.' + str(tab.pageNumber) + '.txt'
 
 class TabSettings():
     def __init__(self):

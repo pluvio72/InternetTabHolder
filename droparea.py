@@ -13,7 +13,7 @@ class DropArea(QLabel):
     tabDeleted = pyqtSignal(QWidget)
     imageLoaded = pyqtSignal()
     
-    def __init__(self, options, tabNumber, driver, minWidth, minHeight, aspectRatio, imageFolder):
+    def __init__(self, options, tabNumber, driver, minWidth, minHeight, aspectRatio, imageFolder, tabFileName, archiveTabFileName):
         super().__init__()
 
         # CONNECT EVENTS (MOUSE/SLOTS & SIGNALS)
@@ -30,6 +30,8 @@ class DropArea(QLabel):
         self.imageFolder = imageFolder
         self.driver = driver
         self.options = options
+        self.tabFileName = tabFileName
+        self.archiveTabFileName = archiveTabFileName
 
         self.setMinimumSize(self.minWidth, self.minHeight)
         self.setFrameStyle(QFrame.Plain)
@@ -125,8 +127,8 @@ class DropArea(QLabel):
             ###
             ### MAKE SURE YOU CANT GET DUPLICATE TAB IN LIST AND DUPLICATE ARCHIVED TAB
             ###
-            duplicateTab = self.checkDuplicateTab(self.url, 'tabs.txt')
-            duplicateArchiveTab = self.checkDuplicateTab(self.url, '.tabs.txt')
+            duplicateTab = self.checkDuplicateTab(self.url, self.tabFileName)
+            duplicateArchiveTab = self.checkDuplicateTab(self.url, self.archiveTabFileName)
             if duplicateTab: self.setDuplicateTab(self.url)
             elif duplicateArchiveTab: self.setDuplicateArchiveTab(self.url)
             else: self.downloadImage(self.url)
@@ -166,8 +168,8 @@ class DropArea(QLabel):
         self.url = url
         ### BUG: WHEN LOADING ARCHIVED TAB FROM MANUAL ADD
         setImagePath = False
-        if self.checkFileExists('.tabs.txt'):
-            with open('.tabs.txt', 'r') as f:
+        if self.checkFileExists(self.archiveTabFileName):
+            with open(self.archiveTabFileName, 'r') as f:
                 for line in f:
                     currentUrl = line.split('\n')[0].split(' ')[0]
                     currentPath = line.split('\n')[0].split(' ')[1]
@@ -213,7 +215,7 @@ class DropArea(QLabel):
     
     # CHECK THROUGH TABS FILE AND SET IMAGEPATH AND PIXMAP IF URL EXISTS
     def setDuplicateTab(self, url):
-        with open('tabs.txt', 'r') as f:
+        with open(self.tabFileName, 'r') as f:
             for line in f:
                 if url == line.split(' ')[0]: 
                     imagePath = line.split(' ')[1]
@@ -222,7 +224,7 @@ class DropArea(QLabel):
     
     # CHECK THROUGH ARCHIVED TABS FILE AND SET IMAGEPATH AND PIXMAP IF URL EXISTS
     def setDuplicateArchiveTab(self, url):
-        with open('.tabs.txt', 'r') as f:
+        with open(self.archiveTabFileName, 'r') as f:
             for line in f:
                 if url == line.split(' ')[0]:
                     imagePath = line.split('\n')[0].split(' ')[1]
@@ -233,7 +235,7 @@ class DropArea(QLabel):
 
     # SAVE TAB ENTRY TO FILE
     def saveTab(self):
-        with open('tabs.txt', 'a') as f:
+        with open(self.tabFileName, 'a') as f:
             info = self.url + ' ' + self.imagePath + ' ' + str(self.tabNumber) + '\n'
             f.write(info)
 

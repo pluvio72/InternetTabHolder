@@ -9,7 +9,7 @@ from selenium.webdriver.chrome.options import Options
 import tabsettings
 
 class DropSiteWindow(QWidget):
-    def __init__(self, pageNumber):
+    def __init__(self, pageNumber, driver):
         super().__init__()
 
         """
@@ -25,9 +25,14 @@ class DropSiteWindow(QWidget):
             HANDLE EXCEPTIONS WERES ARE BLOCKED OR NETWORK DOESNT WORK ETC
             WHEN GOING BACK ONLINE LOAD IMAGE??
             
-            CHECKDUPLICATETAB CAN JUST USE self.options.TABLIST
             REIMPLEMENT LOAD FUNCTION TO MAKE A MIX OF CHECK AND SET DUPLICATE TABS ETC.
-            DELETE ARCHIVED TAB FROM FILE WHEN READDING
+            DELETE ARCHIVED TAB FROM FILE WHEN READING
+
+
+            WHEN RENAMING WHEN LOADING DROPSITEWINDOW WRITE PAGENAME TO PAGENAMES.TXT AND USE IT AS INDEX
+            AFTER RENAMED FROM MAIN.PY YOU SEND NEW STRING/PAGENAME AND RENAME THE PAGE NAME IN THE PAGENAMES.TXT
+            FILE TO THE NEW NAME AND SET WINDOW TITLE TO THAT, THE PAGENAMES IN THE FILE ARE INDEXED BY THE PAGENUMBERS
+            SET TO THE DROPSITEWINDOW
         """   
 
         # SETUP THUMBNAIL FOLDER 
@@ -37,12 +42,8 @@ class DropSiteWindow(QWidget):
         self.acceptDrops = True
         self.options = tabsettings.TabSettings()
         self.pageNumber = pageNumber
-
-        # SETUP HEADLESS CHROME DRIVER -> SETS IMAGE RESOLUTION (BROWSER_SIZE)
-        options = Options()
-        options.headless = True
-        self.driver = webdriver.Chrome(options=options, executable_path='./chromedriver_77')
-        self.driver.set_window_size(tabsettings.IMAGE_WIDTH, tabsettings.IMAGE_HEIGHT)
+        self.pageName = 'Page ' + str(self.pageNumber)
+        self.driver = driver
 
         # SETUP LAYOUTS
         self.mainLayout = QVBoxLayout()
@@ -66,9 +67,9 @@ class DropSiteWindow(QWidget):
         self.setLayout(self.mainLayout)
 
         # IF TAB FILE EXISTS REMAKE TABS
-        self.tabFilePath = os.path.join(os.getcwd(), tabsettings.tabFileName(self.pageNumber))
-        self.tabFileName = tabsettings.tabFileName(self.pageNumber)
-        self.archiveTabFileName = tabsettings.archiveTabFileName(self.pageNumber)
+        self.tabFilePath = os.path.join(os.getcwd(), tabsettings.tabFileName(self))
+        self.tabFileName = tabsettings.tabFileName(self)
+        self.archiveTabFileName = tabsettings.archiveTabFileName(self)
         exists = os.path.isfile(self.tabFilePath)
         size = 0
         if exists: size = os.path.getsize(self.tabFilePath)
@@ -102,7 +103,9 @@ class DropSiteWindow(QWidget):
             self.options.tabRows.append(self.currentRow)
 
         self.options.tabCount += 1
-        drp = DropArea(self.options, self.options.tabCount, self.driver, tabsettings.MIN_TAB_WIDTH, tabsettings.MIN_TAB_HEIGHT, tabsettings.ASPECT_RATIO, tabsettings.ABSOLUTE_IMAGE_FOLDER_PATH)
+        drp = DropArea(self.options, self.options.tabCount, self.driver, 
+        tabsettings.MIN_TAB_WIDTH, tabsettings.MIN_TAB_HEIGHT, tabsettings.ASPECT_RATIO, 
+        tabsettings.ABSOLUTE_IMAGE_FOLDER_PATH, self.tabFileName, self.archiveTabFileName)
         drp.imageLoaded.connect(self.newTab)
         drp.tabDeleted.connect(lambda: self.deleteTab(drp))
         drp.tabAdded.connect(self.addTabToList)
@@ -272,6 +275,13 @@ class DropSiteWindow(QWidget):
         self.cleanClear()
         self.cleanLoad()
         self.clearingTabs = False
+
+    def rename(self, string):
+        with open('pagenames.txt', 'a+') as f:
+            for line in f.readlines():
+                if line.split('\n')[0] == self.pageName
+                    f.write(string)
+                    
     
     def close(self):
         self.driver.close()

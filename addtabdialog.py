@@ -16,10 +16,10 @@ class AddTabDialog(QDialog):
         self.button.clicked.connect(self.addUrl)
 
         self.urlList = QListWidget()
-        path = os.path.join(os.getcwd(), '.tabs.txt')
+        path = os.path.join(os.getcwd(), self.tab.archiveTabFileName)
         if os.path.isfile(path):
             if os.path.getsize(path) > 0:
-                with open('.tabs.txt') as f:
+                with open(self.tab.archiveTabFileName) as f:
                     lines = f.readlines()
                     for line in lines:
                         cur = line.split('\n')[0]
@@ -42,8 +42,8 @@ class AddTabDialog(QDialog):
         url = self.textEdit.text()
         imagePath = url.replace('/', '') + '.png'
 
-        duplicateTab = self.tab.checkDuplicateTab(url, 'tabs.txt')
-        duplicateArchiveTab = self.tab.checkDuplicateTab(url, '.tabs.txt')
+        duplicateTab = self.tab.checkDuplicateTab(url, self.tab.tabFileName)
+        duplicateArchiveTab = self.tab.checkDuplicateTab(url, self.tab.archiveTabFileName)
         if duplicateTab: self.tab.setDuplicateTab(url)
         elif duplicateArchiveTab: self.tab.setDuplicateArchiveTab(url)
         else: self.tab.downloadImage(url)

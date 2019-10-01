@@ -5,13 +5,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import QPalette, QColor, QIcon
 from pagemanager import PageManager
 from dropsitewindow import DropSiteWindow
-
-
-IMAGE_WIDTH = 1920
-IMAGE_HEIGHT = 1080
-ASPECT_RATIO = (float)(IMAGE_HEIGHT/IMAGE_WIDTH)
-MIN_TAB_WIDTH = 360
-MIN_TAB_HEIGHT = (int)(MIN_TAB_WIDTH*ASPECT_RATIO)
+from tabsettings import MIN_TAB_WIDTH, MIN_TAB_HEIGHT, WINDOW_NAME
 
 ABSOLUTE_IMAGE_FOLDER_PATH = os.path.join(os.getcwd(), 'thumbnails')
 IMAGE_FOLDER_PATH = 'thumbnails'
@@ -38,6 +32,11 @@ class MainWindow(QMainWindow):
         newAction.setShortcut("Ctrl+N")
         newAction.triggered.connect(self.centralWidget.newPage)
         file.addAction(newAction)
+
+        renameAction = QAction("Rename Page", self)
+        renameAction.setShortcut("Ctrl+R")
+        renameAction.triggered.connect(self.openRenameDialog)
+        file.addAction(renameAction)
 
         clearAction = QAction("Clear Tabs", self)
         clearAction.setShortcut("Ctrl+Shift+W")
@@ -78,22 +77,40 @@ class MainWindow(QMainWindow):
                 self.tabsPerRowList[i].setChecked(False)
         self.tabsPerRowList[ind].setChecked(True)
         self.centralWidget.openTabPage.changeTabsPerRow(ind + 3)
+    
+    def openRenameDialog(self):
+        dialog = QDialog()
+        layout = QVBoxLayout()
+        textEdit = QLineEdit()
+        textEdit.setPlaceholderText("Enter new name")
+
+        def enterPressed():
+            self.centralWidget.renamePage(textEdit.text())
+            dialog.close()
+
+        textEdit.returnPressed.connect(enterPressed)
+        layout.addWidget(textEdit)
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def changeTitle(self, string):
+        self.setWindowTitle(WINDOW_NAME + string)
 
     def close(self):
+        self.centralWidget.driver.close()
+        self.centralWidget.driver.quit()
+        print('Exiting:::')
         qApp.quit()
 
 if __name__ == '__main__':
     app = QApplication([])
 
-    #widget = DropSiteWindow()
-    #window = MainWindow(widget)
-    #window.show() 
-
     widget = PageManager()
     window = MainWindow(widget)
+    widget.changeWindowTitle.connect(window.changeTitle)
     window.show()
 
-    app.aboutToQuit.connect(widget.close)
+    app.aboutToQuit.connect(window.close)
     #app.setStyle('macintosh')
 
     mainWindow = QMainWindow
