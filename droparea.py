@@ -3,7 +3,6 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from addtabdialog import AddTabDialog
-import constants
 
 MIN_FOR_CLOSE = 100
 
@@ -14,7 +13,7 @@ class DropArea(QLabel):
     tabDeleted = pyqtSignal(QWidget)
     imageLoaded = pyqtSignal()
     
-    def __init__(self, tabNumber, driver, minWidth, minHeight, aspectRatio, imageFolder):
+    def __init__(self, options, tabNumber, driver, minWidth, minHeight, aspectRatio, imageFolder):
         super().__init__()
 
         # CONNECT EVENTS (MOUSE/SLOTS & SIGNALS)
@@ -30,6 +29,7 @@ class DropArea(QLabel):
         self.minHeight = minHeight
         self.imageFolder = imageFolder
         self.driver = driver
+        self.options = options
 
         self.setMinimumSize(self.minWidth, self.minHeight)
         self.setFrameStyle(QFrame.Plain)
@@ -80,7 +80,7 @@ class DropArea(QLabel):
                     # IF NOT LEFT MOST TAB AND TRYING TO DRAG LEFT
                     if not (index == 0 and left):
                         #GET PARENT WIDGET AND MOVE TAB
-                        parent = constants.tabRows[int((self.tabNumber-1)/constants.tabsPerRow)].layout()
+                        parent = self.options.tabRows[int((self.tabNumber-1)/self.options.tabsPerRow)].layout()
                         parent.removeWidget(self)
                         parent.insertWidget(index + tabsToSwap, self)
                         # EMIT SIGNAL SO LIST CAN BE REORGANIZED AND CHAGNES SAVED TO FILE
@@ -192,7 +192,7 @@ class DropArea(QLabel):
     # SET PIXMAP FROM _PIXMAP
     def setLocalPixmap(self):
         self.setPixmap(self._pixmap.scaled(self.sizeHint(), Qt.KeepAspectRatio))
-        constants.loadedTabCount += 1
+        self.options.loadedTabCount += 1
         self.imageLoaded.emit()
 
     # CHECK IF FILE EXISTS AND IF ITS NOT EMPTY

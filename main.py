@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import QPalette, QColor, QIcon
+from pagemanager import PageManager
 from dropsitewindow import DropSiteWindow
 
 
@@ -35,12 +36,12 @@ class MainWindow(QMainWindow):
 
         newAction = QAction("New Page", self)
         newAction.setShortcut("Ctrl+N")
-        #newAction.triggered.connect(self.centralWidget.newPage)
+        newAction.triggered.connect(self.centralWidget.newPage)
         file.addAction(newAction)
 
         clearAction = QAction("Clear Tabs", self)
         clearAction.setShortcut("Ctrl+Shift+W")
-        clearAction.triggered.connect(self.centralWidget.clear)
+        clearAction.triggered.connect(self.centralWidget.openTabPage.clear)
         file.addAction(clearAction)
 
         self.changeTabMenu = file.addMenu("Tabs Per Row")
@@ -76,7 +77,7 @@ class MainWindow(QMainWindow):
             if not i == ind:
                 self.tabsPerRowList[i].setChecked(False)
         self.tabsPerRowList[ind].setChecked(True)
-        self.centralWidget.changeTabsPerRow(ind + 3)
+        self.centralWidget.openTabPage.changeTabsPerRow(ind + 3)
 
     def close(self):
         qApp.quit()
@@ -84,9 +85,13 @@ class MainWindow(QMainWindow):
 if __name__ == '__main__':
     app = QApplication([])
 
-    widget = DropSiteWindow()
+    #widget = DropSiteWindow()
+    #window = MainWindow(widget)
+    #window.show() 
+
+    widget = PageManager()
     window = MainWindow(widget)
-    window.show() 
+    window.show()
 
     app.aboutToQuit.connect(widget.close)
     #app.setStyle('macintosh')
