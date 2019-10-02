@@ -39,6 +39,16 @@ class MainWindow(QMainWindow):
         renameAction.triggered.connect(self.openRenameDialog)
         file.addAction(renameAction)
 
+        nextPageAction = QAction("Next Page", self)
+        nextPageAction.setShortcut("Ctrl+Right")
+        nextPageAction.triggered.connect(self.centralWidget.nextPage)
+        file.addAction(nextPageAction)
+
+        prevPageAction = QAction("Prev Page", self)
+        prevPageAction.setShortcut("Ctrl+Left")
+        prevPageAction.triggered.connect(self.centralWidget.prevPage)
+        file.addAction(prevPageAction)
+
         clearAction = QAction("Clear Tabs", self)
         clearAction.setShortcut("Ctrl+Shift+W")
         clearAction.triggered.connect(self.centralWidget.openTabPage.clear)

@@ -27,6 +27,7 @@ class DropSiteWindow(QWidget):
             REIMPLEMENT LOAD FUNCTION TO MAKE A MIX OF CHECK AND SET DUPLICATE TABS ETC.
             DELETE ARCHIVED TAB FROM FILE WHEN READING
 
+            WINDOW DOESN'T SHOW IN APPLE MISSION CONTROL -> MAYBE SOMETHING TO DO WITH WINDOW MODALITY
 
             WHEN RENAMING WHEN LOADING DROPSITEWINDOW WRITE PAGENAME TO PAGENAMES.TXT AND USE IT AS INDEX
             AFTER RENAMED FROM MAIN.PY YOU SEND NEW STRING/PAGENAME AND RENAME THE PAGE NAME IN THE PAGENAMES.TXT
@@ -285,7 +286,6 @@ class DropSiteWindow(QWidget):
                 for index, line in enumerate(f.readlines()):
                     if index+1 == self.pageNumber:
                         self.pageName = line.split('\n')[0]
-                        print('New Page Name: ' + self.pageName)
 
     def updatePageNames(self):
         if not os.path.exists(os.path.join(os.getcwd(), 'pagenames.txt')):
