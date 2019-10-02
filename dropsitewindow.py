@@ -293,12 +293,19 @@ class DropSiteWindow(QWidget):
                 f.write(self.pageName + '\n')
         else:
             data = open('pagenames.txt', 'r').readlines()
-            with open('pagenames.txt', 'w') as f:
-                for index, line in enumerate(data):
-                    if index+1 == self.pageNumber:
-                        f.write(self.pageName + '\n')
-                    else:
-                        f.write(line)
+            # IF NUMBER OF LINES >= NUMBER THEN NAME WILL BE IN FILE
+            print(len(data))
+            if len(data) >= self.pageNumber:
+                with open('pagenames.txt', 'w') as f:
+                    for index, line in enumerate(data):
+                        if index+1 == self.pageNumber:
+                            f.write(self.pageName + '\n')
+                        else:
+                            f.write(line)
+            # NAME IS NOT IN FILE SO MUST APPEND IT TO FILE
+            else:
+                with open('pagenames.txt', 'a') as f:
+                    f.write(self.pageName + '\n')
 
     def rename(self, string):
         self.pageName = string

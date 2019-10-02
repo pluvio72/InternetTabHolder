@@ -5,6 +5,7 @@ from dropsitewindow import DropSiteWindow
 from tabsettings import IMAGE_WIDTH, IMAGE_HEIGHT
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+import os
 
 class PageManager(QWidget):
     changeWindowTitle = pyqtSignal(str)
@@ -18,6 +19,8 @@ class PageManager(QWidget):
         self.driver.set_window_size(IMAGE_WIDTH, IMAGE_HEIGHT)
 
         self.tabPages = []
+        self.loadPages()
+
         self.openTabPage = DropSiteWindow(1, self.driver)
         self.tabPages.append(self.openTabPage)
         self.currentPage = 1
@@ -27,6 +30,13 @@ class PageManager(QWidget):
         self.mainLayout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.mainLayout)
     
+    # LOAD PAGES INTO TABPAGES ARRAY SO WHEN ACCESSING NEXT PAGE ELEMENT IS THERE
+    def loadPages(self):
+        if os.path.isfile(os.path.join(os.getcwd(), 'pagenames.txt')):
+            data = open('pagenames.txt', 'r').readlines()
+            for index, page in enumerate(data):
+                self.tabPages.append(DropSiteWindow(index+1, self.driver))
+
     # CMD+N -> DELETES OLD PAGE -> CREATES NEW PAGE -> SETS PARENT TO THIS -> UPDATES WINDOW TITLE + CURRENT PAGE
     def newPage(self):
         self.currentPage += 1
