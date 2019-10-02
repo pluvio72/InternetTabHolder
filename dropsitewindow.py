@@ -13,21 +13,18 @@ class DropSiteWindow(QWidget):
         super().__init__()
 
         """
-            CHECK ARCHIVED TAB FILE SIZE
-            QUICK START IN OPTIONS OR CHANGE OPTIONS TO FILE MENU
-            FAVOURITE TABS HIGHER
-            SUPPORT MULTIPLE OTHER DATA TYPES E.G. PDF OPENS IN PDF VIEWER
-            REORDER TABS VERTICALLY????
-            MAKE CUSTOM WIDGET FOR CLOSE BUTTON
-            ADD SUPPORT FOR DIFFERENT PAGES OF TABS AND RENAMING THEM
-            IT MAY BE POSSIBLE TO REORGANIZE TAB NUMBERS WHEN DELETING THEM WHEN WRITING DELETED TAB OUT OF FILE
-            HANDLE EXCEPTIONS WERES ARE BLOCKED OR NETWORK DOESNT WORK ETC ->WHEN GOING BACK ONLINE LOAD IMAGE??
             LOOK AT THREADING DRIVER
-            
+            QUICK START IN OPTIONS
+            HANDLE EXCEPTIONS WERES ARE BLOCKED OR NETWORK DOESNT WORK ETC -> WHEN GOING BACK ONLINE LOAD IMAGE
             REIMPLEMENT LOAD FUNCTION TO MAKE A MIX OF CHECK AND SET DUPLICATE TABS ETC.
-            DELETE ARCHIVED TAB FROM FILE WHEN READING
-
             WINDOW DOESN'T SHOW IN APPLE MISSION CONTROL -> MAYBE SOMETHING TO DO WITH WINDOW MODALITY
+            COMMENT EVERYTHING BEFORE I BUILD
+
+            FUTURE FEATURES:
+             - MORE FREEDOM WITH REARRANGING TABS
+             - SUPPORT OTHER DATA TYPES E.G. PDF FILE ETC..
+             - FAVOURITE TABS -> MOVES THEM HIGHER
+             - ANIMATE CLOSE BUTTON FADE IN/OUT
         """   
 
         # SETUP THUMBNAIL FOLDER 
@@ -127,10 +124,7 @@ class DropSiteWindow(QWidget):
             tab.deleteLater()
 
             # REMOVE ENTRY FROM SAVED TABS FILE
-            fileData = []
-            with open(self.tabFileName, 'r') as inp:
-                fileData = inp.readlines()
-
+            fileData = open(self.tabFileName, 'r').readlines()
             with open(self.tabFileName, 'w') as out:
                 # FILE LAYOUT EACH LINE -> (URL IMAGE_PATH TAB_NUMBER)
                 for line in fileData:
@@ -145,7 +139,7 @@ class DropSiteWindow(QWidget):
 
     def archiveTab(self, url, imagePath):
         try: os.rename(os.path.join(tabsettings.IMAGE_FOLDER_PATH, imagePath), os.path.join(tabsettings.IMAGE_FOLDER_PATH, '.'+imagePath))
-        except FileNotFoundError: print('RENAMING:::File Not Found:::' + imagePath)
+        except FileNotFoundError: pass
 
         with open(self.archiveTabFileName, 'a+') as f:
             f.seek(0)

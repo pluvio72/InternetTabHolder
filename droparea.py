@@ -50,11 +50,13 @@ class DropArea(QLabel):
         if self.taken:
             self.setToolTip(self.url)
             self.setToolTipDuration(1000)
+            self.button.setVisible(True)
         else: self.setBackgroundRole(QPalette.Highlight)
     
     # ON MOUSE LEAVE
     def leaveEvent(self, event):
         if not self.taken: self.setBackgroundRole(QPalette.Dark)
+        else: self.button.setVisible(False)
 
     def areaClicked(self, event):
         self.startClick = event.pos()
@@ -157,10 +159,14 @@ class DropArea(QLabel):
         return QSize(self.minWidth, self.minHeight)
 
     def addCloseButton(self):
-        button = QPushButton("x", self)
-        button.move(0, 0)
-        button.show()
-        button.clicked.connect(lambda: self.tabDeleted.emit(self))
+        self.button = QPushButton("x", self)
+        buttonOpacity = QGraphicsOpacityEffect()
+        buttonOpacity.setOpacity(0.5)
+        self.button.setGraphicsEffect(buttonOpacity)
+        self.button.move(0, 0)
+        self.button.show()
+        self.button.setVisible(False)
+        self.button.clicked.connect(lambda: self.tabDeleted.emit(self))
 
     # LOAD TAB PIXMAP AND SET CLASS VARIABLES
     def load(self, url, imagePath):
