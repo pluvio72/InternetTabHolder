@@ -14,12 +14,13 @@ class MainWindow(QMainWindow):
     def __init__(self, centralWidget, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setMinimumSize(MIN_TAB_WIDTH*3 + 12, MIN_TAB_HEIGHT*3+14)
-        self.setWindowTitle('Internet Tab Holder')
+        self.setWindowTitle('Internet Tab Holder') 
         self.setCentralWidget(centralWidget)
         self.setMouseTracking(True)
 
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.centralWidget = centralWidget
+        self.centralWidget.changeWindowTitle.connect(self.changeTitle)
         self.createMenu()
 
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
@@ -107,7 +108,7 @@ if __name__ == '__main__':
 
     widget = PageManager()
     window = MainWindow(widget)
-    widget.changeWindowTitle.connect(window.changeTitle)
+    widget.updateTitle()
     window.show()
 
     app.aboutToQuit.connect(window.close)

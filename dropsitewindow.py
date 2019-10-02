@@ -21,9 +21,8 @@ class DropSiteWindow(QWidget):
             MAKE CUSTOM WIDGET FOR CLOSE BUTTON
             ADD SUPPORT FOR DIFFERENT PAGES OF TABS AND RENAMING THEM
             IT MAY BE POSSIBLE TO REORGANIZE TAB NUMBERS WHEN DELETING THEM WHEN WRITING DELETED TAB OUT OF FILE
+            HANDLE EXCEPTIONS WERES ARE BLOCKED OR NETWORK DOESNT WORK ETC ->WHEN GOING BACK ONLINE LOAD IMAGE??
             LOOK AT THREADING DRIVER
-            HANDLE EXCEPTIONS WERES ARE BLOCKED OR NETWORK DOESNT WORK ETC
-            WHEN GOING BACK ONLINE LOAD IMAGE??
             
             REIMPLEMENT LOAD FUNCTION TO MAKE A MIX OF CHECK AND SET DUPLICATE TABS ETC.
             DELETE ARCHIVED TAB FROM FILE WHEN READING
@@ -44,6 +43,8 @@ class DropSiteWindow(QWidget):
         self.pageNumber = pageNumber
         self.pageName = 'Page ' + str(self.pageNumber)
         self.driver = driver
+
+        self.setPageName()
 
         # SETUP LAYOUTS
         self.mainLayout = QVBoxLayout()
@@ -76,6 +77,8 @@ class DropSiteWindow(QWidget):
         if size > 0 and exists:
             self.loadTabs(self.tabFilePath)
         else: self.newTab()
+
+        self.updatePageNames()
     
     def loadTabs(self, path):
         with open(path, 'r') as f:
@@ -276,12 +279,30 @@ class DropSiteWindow(QWidget):
         self.cleanLoad()
         self.clearingTabs = False
 
+    def setPageName(self):
+        if os.path.exists(os.path.join(os.getcwd(), 'pagenames.txt')): 
+            with open('pagenames.txt', 'r+') as f:
+                for index, line in enumerate(f.readlines()):
+                    if index+1 == self.pageNumber:
+                        self.pageName = line.split('\n')[0]
+                        print('New Page Name: ' + self.pageName)
+
+    def updatePageNames(self):
+        if not os.path.exists(os.path.join(os.getcwd(), 'pagenames.txt')):
+            with open('pagenames.txt', 'a+') as f:
+                f.write(self.pageName + '\n')
+        else:
+            data = open('pagenames.txt', 'r').readlines()
+            with open('pagenames.txt', 'w') as f:
+                for index, line in enumerate(data):
+                    if index+1 == self.pageNumber:
+                        f.write(self.pageName + '\n')
+                    else:
+                        f.write(line)
+
     def rename(self, string):
-        with open('pagenames.txt', 'a+') as f:
-            for line in f.readlines():
-                if line.split('\n')[0] == self.pageName
-                    f.write(string)
-                    
+        self.pageName = string
+        self.updatePageNames()      
     
     def close(self):
         self.driver.close()

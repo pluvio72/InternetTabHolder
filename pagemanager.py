@@ -35,6 +35,8 @@ class PageManager(QWidget):
         self.changeWindowTitle.emit(self.openTabPage.pageName)
     
     def renamePage(self, string):
-        self.openTabPage.pageName = string
-        self.openTagPage.rename(string)
+        self.openTabPage.rename(string)
+        self.changeWindowTitle.emit(self.openTabPage.pageName)
+    
+    def updateTitle(self):
         self.changeWindowTitle.emit(self.openTabPage.pageName)
