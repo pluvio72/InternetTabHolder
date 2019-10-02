@@ -28,11 +28,6 @@ class DropSiteWindow(QWidget):
             DELETE ARCHIVED TAB FROM FILE WHEN READING
 
             WINDOW DOESN'T SHOW IN APPLE MISSION CONTROL -> MAYBE SOMETHING TO DO WITH WINDOW MODALITY
-
-            WHEN RENAMING WHEN LOADING DROPSITEWINDOW WRITE PAGENAME TO PAGENAMES.TXT AND USE IT AS INDEX
-            AFTER RENAMED FROM MAIN.PY YOU SEND NEW STRING/PAGENAME AND RENAME THE PAGE NAME IN THE PAGENAMES.TXT
-            FILE TO THE NEW NAME AND SET WINDOW TITLE TO THAT, THE PAGENAMES IN THE FILE ARE INDEXED BY THE PAGENUMBERS
-            SET TO THE DROPSITEWINDOW
         """   
 
         # SETUP THUMBNAIL FOLDER 
@@ -80,6 +75,7 @@ class DropSiteWindow(QWidget):
         else: self.newTab()
 
         self.updatePageNames()
+        self.checkArchiveTabFileSize()
     
     def loadTabs(self, path):
         with open(path, 'r') as f:
@@ -294,7 +290,6 @@ class DropSiteWindow(QWidget):
         else:
             data = open('pagenames.txt', 'r').readlines()
             # IF NUMBER OF LINES >= NUMBER THEN NAME WILL BE IN FILE
-            print(len(data))
             if len(data) >= self.pageNumber:
                 with open('pagenames.txt', 'w') as f:
                     for index, line in enumerate(data):
@@ -309,7 +304,16 @@ class DropSiteWindow(QWidget):
 
     def rename(self, string):
         self.pageName = string
-        self.updatePageNames()      
+        self.updatePageNames()
+
+    def checkArchiveTabFileSize(self):
+        if os.path.isfile(os.path.join(os.getcwd(), self.archiveTabFileName)):
+            data = open(self.archiveTabFileName, 'r').readlines()
+            if len(data) > tabsettings.ARCHIVE_TAB_FILE_MAX_SIZE:
+                with open(self.archiveTabFileName, 'w') as f:
+                    for index, line in enumerate(data):
+                        if index != 0 and index <= tabsettings.ARCHIVE_TAB_FILE_MAX_SIZE:
+                            f.write(line)
     
     def close(self):
         self.driver.close()
