@@ -1,8 +1,8 @@
-import os
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QLabel, QFrame, QPushButton, QGraphicsOpacityEffect, QWidget, QSizePolicy
+from PyQt5.QtGui import QPalette, QPixmap, QDesktopServices
+from PyQt5.QtCore import pyqtSignal, QSize, Qt
 from addtabdialog import AddTabDialog
+import os
 
 MIN_FOR_CLOSE = 100
 

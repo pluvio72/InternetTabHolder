@@ -1,10 +1,10 @@
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from dropsitewindow import DropSiteWindow
 from tabsettings import IMAGE_WIDTH, IMAGE_HEIGHT
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from sys import platform, exit
 import os
 
 class PageManager(QWidget):
@@ -15,7 +15,9 @@ class PageManager(QWidget):
 
         options = Options()
         options.headless = True
-        driver_path = os.environ['chrome_driver'] if hasattr(os.environ, 'chrome_driver') else '../chromedriver_77'
+
+        driver_path = os.environ['chrome_driver']
+
         self.driver = webdriver.Chrome(options=options, executable_path=driver_path)
         self.driver.set_window_size(IMAGE_WIDTH, IMAGE_HEIGHT)
 

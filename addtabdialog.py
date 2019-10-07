@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem, QSizePolicy, QFrame
+from PyQt5.QtCore import Qt
 import os
 
 class AddTabDialog(QDialog):

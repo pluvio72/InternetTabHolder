@@ -1,11 +1,11 @@
-import sys
-import os
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QMainWindow, QAction, QDialog, QVBoxLayout, QPushButton, QLineEdit, QApplication, qApp
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QColor, QIcon
 from pagemanager import PageManager
 from dropsitewindow import DropSiteWindow
 from tabsettings import MIN_TAB_WIDTH, MIN_TAB_HEIGHT, WINDOW_NAME
+import sys
+import os
 
 # SET CURRENT WORKING DIRECTORY
 current_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -15,8 +15,9 @@ if not os.path.exists(os.path.join(os.getcwd(), '_data')):
 os.chdir('_data')
 
 # SET DRIVER PATH ENVIRONMENT VARIABLE
-if not os.path.isfile(os.path.join(os.getcwd(), '../chromedriver_77')):
-    os.environ['chrome_driver'] = os.path.join(os.getcwd(), '../../../../../chromedriver_77')
+driver_path = 'chromedriver_mac_77' if sys.platform == 'darwin' else 'chromedriver_win32_77'
+if not os.path.isfile(os.path.join(os.getcwd(), '../'+driver_path)): os.environ['chrome_driver'] = os.path.abspath(os.path.join(os.getcwd(), '../../../../../'+driver_path))
+else: os.environ['chrome_driver'] = os.path.abspath('../'+driver_path)
 
 class MainWindow(QMainWindow):
     def __init__(self, centralWidget, *args, **kwargs):
@@ -31,7 +32,7 @@ class MainWindow(QMainWindow):
         self.centralWidget.changeWindowTitle.connect(self.changeTitle)
         self.createMenu()
 
-        self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        #self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
     # CREATE ALL MENU BUTTONS -> SET SHORTCUTS -> CONNECT SIGNALS/SLOTS
     def createMenu(self):

@@ -1,5 +1,6 @@
 # Internet Tab Holder
-
+	
+ - python setup.py
  - pip install -r requirements.txt
  - python3 main.py
 

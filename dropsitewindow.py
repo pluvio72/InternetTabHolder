@@ -1,12 +1,12 @@
-import os
-import sys
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QVBoxLayout, QScrollArea, QWidget, QHBoxLayout, QFrame, QLayout
+from selenium.webdriver.chrome.options import Options
 from PyQt5.QtGui import QPalette, QColor, QIcon
+from PyQt5.QtCore import Qt
 from droparea import DropArea
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 import tabsettings
+import sys
+import os
 
 class DropSiteWindow(QWidget):
     def __init__(self, pageNumber, driver):
@@ -22,6 +22,10 @@ class DropSiteWindow(QWidget):
 
 
             ONLY IMPORT NEEDED CLASSES
+            MANUAL ADD URL ON WINDOWS CRASHES
+            REOPNING TAB DOESNT SAVE PAGE STATE
+            REOPNING TAB OPENS IN DIFFERENT BROWSER
+            DIFFERENT DRIVER NEEDED DEPENDING ON OS
 
 
             FUTURE FEATURES:
@@ -327,16 +331,6 @@ class DropSiteWindow(QWidget):
                     for index, line in enumerate(data):
                         if index != 0 and index <= tabsettings.ARCHIVE_TAB_FILE_MAX_SIZE:
                             f.write(line)
-
-
-    #####
-    ####
-    def writeLog(self, text):
-        with open('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt', 'a') as f:
-            f.write(text)
-    #####
-    ######
-
     
     def close(self):
         self.driver.close()
