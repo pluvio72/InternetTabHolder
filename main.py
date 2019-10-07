@@ -135,20 +135,16 @@ class MainWindow(QMainWindow):
     def close(self):
         self.centralWidget.driver.close()
         self.centralWidget.driver.quit()
-        print('Exiting:::')
         qApp.quit()
 
-##
-###
-#####
-def writeLog(text):
-    with open('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt', 'a') as f:
-        f.write(text)
+######
+######
+######
 if os.path.isfile('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt'):
     os.remove('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt')
 ######
-###
-##
+######
+######
 
 app = QApplication([])
 

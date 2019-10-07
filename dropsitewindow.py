@@ -29,6 +29,7 @@ class DropSiteWindow(QWidget):
              - SUPPORT OTHER DATA TYPES E.G. PDF FILE ETC..
              - FAVOURITE TABS -> MOVES THEM HIGHER
              - ANIMATE CLOSE BUTTON FADE IN/OUT
+             - IMPLEMENT THEMES (ONLY DARK MODE RIGHT NOW)
         """   
 
         # SETUP THUMBNAIL FOLDER 
