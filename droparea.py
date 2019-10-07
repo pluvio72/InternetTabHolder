@@ -119,16 +119,6 @@ class DropArea(QLabel):
             self.taken = True
             self.url = event.mimeData().text()
 
-            ###
-            ### CHECK URL IN TABLIST -> USE LOCAL IMAGE
-            ### CHECK URL IN ARCHIVED TAB LIST -> USE LOCAL IMAGE
-            ### IF NEW URL -> DOWNLOAD IMAGE
-            ### SET PIXMAP FROM _PIXMAP
-            ### SAVE TAB TO FILE
-            ### ADD TAB TO TAB LIST
-            ###
-            ### MAKE SURE YOU CANT GET DUPLICATE TAB IN LIST AND DUPLICATE ARCHIVED TAB
-            ###
             duplicateTab = self.checkDuplicateTab(self.url, self.tabFileName)
             duplicateArchiveTab = self.checkDuplicateTab(self.url, self.archiveTabFileName)
             if duplicateTab: self.setDuplicateTab(self.url)
@@ -159,9 +149,9 @@ class DropArea(QLabel):
         return QSize(self.minWidth, self.minHeight)
 
     def addCloseButton(self):
-        self.button = QPushButton("x", self)
+        self.button = QPushButton('x', self)
         buttonOpacity = QGraphicsOpacityEffect()
-        buttonOpacity.setOpacity(0.5)
+        buttonOpacity.setOpacity(0.45)
         self.button.setGraphicsEffect(buttonOpacity)
         self.button.move(0, 0)
         self.button.show()
@@ -253,6 +243,7 @@ class DropArea(QLabel):
         self.tabAdded.emit(self, self.tabNumber)
         self.imageLoaded.emit()
 
+    ### QUICK METHODS TO SET TAB STYLING
     def defaultTab(self, text):
         self.setText(text)
         self.setBackgroundRole(QPalette.Dark)

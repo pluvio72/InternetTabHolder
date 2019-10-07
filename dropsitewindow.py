@@ -20,6 +20,10 @@ class DropSiteWindow(QWidget):
             WINDOW DOESN'T SHOW IN APPLE MISSION CONTROL -> MAYBE SOMETHING TO DO WITH WINDOW MODALITY
             COMMENT EVERYTHING BEFORE I BUILD
 
+
+            ONLY IMPORT NEEDED CLASSES
+
+
             FUTURE FEATURES:
              - MORE FREEDOM WITH REARRANGING TABS
              - SUPPORT OTHER DATA TYPES E.G. PDF FILE ETC..
@@ -28,7 +32,7 @@ class DropSiteWindow(QWidget):
         """   
 
         # SETUP THUMBNAIL FOLDER 
-        if not (os.path.isdir(tabsettings.ABSOLUTE_IMAGE_FOLDER_PATH)): os.mkdir(tabsettings.ABSOLUTE_IMAGE_FOLDER_PATH)
+        if not (os.path.isdir(tabsettings.absImageFolderPath())): os.mkdir(tabsettings.absImageFolderPath())
 
         self.clearingTabs = False
         self.acceptDrops = True
@@ -74,6 +78,7 @@ class DropSiteWindow(QWidget):
         self.updatePageNames()
         self.checkArchiveTabFileSize()
     
+    # LOAD TABS FROM CURRENT PAGE TAB FILE -> CREATE NEW TAB -> LOAD TAB WITH CONTENT OF TAB FILE ENTRY
     def loadTabs(self, path):
         with open(path, 'r') as f:
             data = f.readlines()
@@ -90,6 +95,7 @@ class DropSiteWindow(QWidget):
                 if index == len(data)-1:
                     self.newTab()
 
+    # CREATE NEW TAB -> IF TABCOUNT > ALLOWED -> CREATE NEW ROW THEN ADD TAB
     def newTab(self):
         if (self.options.tabCount % self.options.tabsPerRow) == 0:
             self.currentRow = QHBoxLayout()
@@ -102,7 +108,7 @@ class DropSiteWindow(QWidget):
         self.options.tabCount += 1
         drp = DropArea(self.options, self.options.tabCount, self.driver, 
         tabsettings.MIN_TAB_WIDTH, tabsettings.MIN_TAB_HEIGHT, tabsettings.ASPECT_RATIO, 
-        tabsettings.ABSOLUTE_IMAGE_FOLDER_PATH, self.tabFileName, self.archiveTabFileName)
+        tabsettings.absImageFolderPath(), self.tabFileName, self.archiveTabFileName)
         drp.imageLoaded.connect(self.newTab)
         drp.tabDeleted.connect(lambda: self.deleteTab(drp))
         drp.tabAdded.connect(self.addTabToList)
@@ -112,9 +118,11 @@ class DropSiteWindow(QWidget):
         self.currentRow.addWidget(drp)
         return drp
     
+    # SHORTCUT METHOD TO LOAD TAB 
     def loadTabData(self, tab, url, imagePath):
         tab.load(url, imagePath)
         
+    # DELETE TAB -> SET PARENT NONE -> REMOVE FROM TAB LIST -> DELETE ENTRY IN TAB FILE -> ARCHIVE IF NOT DUPLICATE
     def deleteTab(self, tab):
         if tab.taken:
             self.options.tabCount -= 1
@@ -137,6 +145,7 @@ class DropSiteWindow(QWidget):
             dontArchiveImage = tab.checkDuplicateTab(tab.url, self.tabFileName)
             if not dontArchiveImage: self.archiveTab(tab.url, tab.imagePath)
 
+    # ARCHIVE TAB IN ARCHIVE TAB FILE NAME OF CURRENT PAGE -> RENAME IMAGE TO .IMAGE IF ITS AVAILABLE
     def archiveTab(self, url, imagePath):
         try: os.rename(os.path.join(tabsettings.IMAGE_FOLDER_PATH, imagePath), os.path.join(tabsettings.IMAGE_FOLDER_PATH, '.'+imagePath))
         except FileNotFoundError: pass
@@ -150,10 +159,12 @@ class DropSiteWindow(QWidget):
                     duplicate = True
             if not duplicate: f.write(url + ' ' + '.' + imagePath + '\n')
 
+    # ADD TAB TO TABLIST -> IF NUMBER GREATER THEN LIST SIZE -> APPEND -> ELSE REPLACE TAB IN LIST
     def addTabToList(self, tab, tabNum):
         if len(self.options.tabList) <= tabNum: self.options.tabList.append(tab)
         else: self.options.tabList[tabNum] = tab
 
+    # REORDER TAB IN TABLIST AND MOVE WIDGET -> REORGANIZE TAB FILE TO SHOW CHANGES MADE
     def reorderTab(self, tab, swapValue):
         # GET INDEX OF TAB IN TAB LIST
         index = self.options.tabList.index(tab)
@@ -163,6 +174,7 @@ class DropSiteWindow(QWidget):
         self.options.tabList.insert(newIndex, tab)
         self.reorganizeTabFile()
 
+    # REORGANIZE TAB FILE -> FROM DELETED TAB (TAB NUMBERS WRONG) -> OR FROM REORGANIZING TAB
     def reorganizeTabFile(self):
         if os.path.isfile(self.tabFilePath) and os.path.getsize(self.tabFilePath) > 0:
             if not self.clearingTabs:
@@ -192,6 +204,7 @@ class DropSiteWindow(QWidget):
                     f.write(finalStringData)
         self.checkLayouts()
     
+    # CHECK IF ANY LAYOUTS HAVE < 3 CHILDREN APART FROM LAST -> MOVE WIDGETS TO PREVIOUS LAYOUT/ROW ::: IF CURRENT ROW EMPTY -> SET TO PREVIOUS ROW
     def checkLayouts(self):
         # IF ANY LAYOUTS HAVE < 3 CHILDREN REORGANIZE THE WIDGETS
         complete = False
@@ -209,6 +222,7 @@ class DropSiteWindow(QWidget):
             self.currentRow.deleteLater()
             self.currentRow = self.options.tabRows[len(self.options.tabRows)-1]
 
+    # CLEAR ALL TABS IN CURRENT PAGE -> EMPTY TABLIST AND TABROWS -> ARCHIVE ALL DELETED TABS
     def clear(self):
         self.clearingTabs = True
 
@@ -260,7 +274,7 @@ class DropSiteWindow(QWidget):
                 drp.load(url, imagePath)
         self.newTab()
                 
-    
+    # CHANGE TABS PER ROW IN CURRENT PAGE OPTIONS -> CHANGE MIN WIDTH/HEIGHT -> RELOAD ALL TABS
     def changeTabsPerRow(self, number):
         self.clearingTabs = True
         tabsettings.MIN_TAB_WIDTH *= (self.options.tabsPerRow/number)
@@ -270,6 +284,7 @@ class DropSiteWindow(QWidget):
         self.cleanLoad()
         self.clearingTabs = False
 
+    # SET PAGE NAME FROM ENTRY IN PAGENAMES.TXT BY PAGENUMBER
     def setPageName(self):
         if os.path.exists(os.path.join(os.getcwd(), 'pagenames.txt')): 
             with open('pagenames.txt', 'r+') as f:
@@ -277,6 +292,7 @@ class DropSiteWindow(QWidget):
                     if index+1 == self.pageNumber:
                         self.pageName = line.split('\n')[0]
 
+    # UPDATE PAGENAMES.TXT -> IF DOESN'T EXIST -> WRITE PAGENAME -> ELSE REWRITE ENTRY TO PAGENAME -> OR IF NEW PAGE WRITE NEW LINE
     def updatePageNames(self):
         if not os.path.exists(os.path.join(os.getcwd(), 'pagenames.txt')):
             with open('pagenames.txt', 'a+') as f:
@@ -296,10 +312,12 @@ class DropSiteWindow(QWidget):
                 with open('pagenames.txt', 'a') as f:
                     f.write(self.pageName + '\n')
 
+    # SET PAGENAME AND UPDATE PAGENAMES.TXT WITH NEW NAME
     def rename(self, string):
         self.pageName = string
         self.updatePageNames()
 
+    # CHECK IF ARCHIVE TAB FILE SIZE IS GREATER THEN VALUE -> REWRITE OUT FIRST LINES UNTIL ITS DESIRED SIZE
     def checkArchiveTabFileSize(self):
         if os.path.isfile(os.path.join(os.getcwd(), self.archiveTabFileName)):
             data = open(self.archiveTabFileName, 'r').readlines()
@@ -308,6 +326,16 @@ class DropSiteWindow(QWidget):
                     for index, line in enumerate(data):
                         if index != 0 and index <= tabsettings.ARCHIVE_TAB_FILE_MAX_SIZE:
                             f.write(line)
+
+
+    #####
+    ####
+    def writeLog(self, text):
+        with open('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt', 'a') as f:
+            f.write(text)
+    #####
+    ######
+
     
     def close(self):
         self.driver.close()

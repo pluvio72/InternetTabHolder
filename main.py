@@ -7,8 +7,16 @@ from pagemanager import PageManager
 from dropsitewindow import DropSiteWindow
 from tabsettings import MIN_TAB_WIDTH, MIN_TAB_HEIGHT, WINDOW_NAME
 
-ABSOLUTE_IMAGE_FOLDER_PATH = os.path.join(os.getcwd(), 'thumbnails')
-IMAGE_FOLDER_PATH = 'thumbnails'
+# SET CURRENT WORKING DIRECTORY
+current_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+os.chdir(current_dir)
+if not os.path.exists(os.path.join(os.getcwd(), '_data')):
+    os.mkdir(os.path.join(os.getcwd(), '_data'))
+os.chdir('_data')
+
+# SET DRIVER PATH ENVIRONMENT VARIABLE
+if not os.path.isfile(os.path.join(os.getcwd(), '../chromedriver_77')):
+    os.environ['chrome_driver'] = os.path.join(os.getcwd(), '../../../../../chromedriver_77')
 
 class MainWindow(QMainWindow):
     def __init__(self, centralWidget, *args, **kwargs):
@@ -25,6 +33,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
+    # CREATE ALL MENU BUTTONS -> SET SHORTCUTS -> CONNECT SIGNALS/SLOTS
     def createMenu(self):
         menuBar = self.menuBar()
         file = menuBar.addMenu("File")
@@ -77,11 +86,17 @@ class MainWindow(QMainWindow):
         self.tabsPerRowList[1].triggered.connect(lambda: self.changedTabsPerRow(1))
         self.tabsPerRowList[2].triggered.connect(lambda: self.changedTabsPerRow(2))
 
+        helpAction = QAction("Help", self)
+        helpAction.setShortcut("Ctrl+Shift+H")
+        helpAction.triggered.connect(self.showHelp)
+        file.addAction(helpAction)
+
         quitAction = QAction("&Close", self)
         quitAction.setShortcut("Ctrl+Q")
         quitAction.triggered.connect(self.close)
         file.addAction(quitAction)
     
+    # SET ALL OTHER TAB NUMBER OPTIONS TO UNCHECKED -> CHANGE TABS PER ROW ON CURRENT PAGE
     def changedTabsPerRow(self, ind):
         for i in range(len(self.tabsPerRowList)):
             if not i == ind:
@@ -89,6 +104,15 @@ class MainWindow(QMainWindow):
         self.tabsPerRowList[ind].setChecked(True)
         self.centralWidget.openTabPage.changeTabsPerRow(ind + 3)
     
+    # CMD+SHIFT+H SHOWS HELP DIALOG WITH HOW TO USE THE TAB HOLDER
+    def showHelp(self):
+        dialog = QDialog()
+        layout = QVBoxLayout()
+        layout.addWidget(QPushButton("Help"))
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    # CMD+R OPENS DIALOG WITH TEXT EDIT WHICH RENAMES TAG PAGE VARIABLE -> RENAMES WINDOW -> UPDATES ENTRY IN PAGENAMES FILE
     def openRenameDialog(self):
         dialog = QDialog()
         layout = QVBoxLayout()
@@ -104,6 +128,7 @@ class MainWindow(QMainWindow):
         dialog.setLayout(layout)
         dialog.exec_()
 
+    # CHANGES WINDOW TITLE
     def changeTitle(self, string):
         self.setWindowTitle(WINDOW_NAME + string)
 
@@ -113,35 +138,46 @@ class MainWindow(QMainWindow):
         print('Exiting:::')
         qApp.quit()
 
-if __name__ == '__main__':
-    app = QApplication([])
+##
+###
+#####
+def writeLog(text):
+    with open('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt', 'a') as f:
+        f.write(text)
+if os.path.isfile('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt'):
+    os.remove('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt')
+######
+###
+##
 
-    widget = PageManager()
-    window = MainWindow(widget)
-    widget.updateTitle()
-    window.show()
+app = QApplication([])
 
-    app.aboutToQuit.connect(window.close)
-    #app.setStyle('macintosh')
+widget = PageManager()
+window = MainWindow(widget)
+widget.updateTitle()
+window.show()
 
-    mainWindow = QMainWindow
+app.aboutToQuit.connect(window.close)
+#app.setStyle('macintosh')
 
-    style = QPalette()
-    style.setColor(QPalette.Window, QColor(53, 53, 53))
-    style.setColor(QPalette.Background, QColor(53, 53, 53))
-    style.setColor(QPalette.WindowText, Qt.red)
-    style.setColor(QPalette.Base, QColor(25, 25, 25))
-    style.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-    style.setColor(QPalette.ToolTipBase, Qt.black)
-    style.setColor(QPalette.ToolTipText, Qt.white)
-    style.setColor(QPalette.Text, Qt.red)
-    style.setColor(QPalette.Button, QColor(53, 53, 53))
-    style.setColor(QPalette.ButtonText, QColor(42, 42, 42))
-    style.setColor(QPalette.BrightText, Qt.red)
-    style.setColor(QPalette.Link, QColor(42, 130, 218))
-    style.setColor(QPalette.Highlight, QColor(42, 130, 218))
-    style.setColor(QPalette.HighlightedText, Qt.black)
-    style.setColor(QPalette.Light, QColor(53, 53, 53))
-    app.setPalette(style)
+mainWindow = QMainWindow
 
-    sys.exit(app.exec_())
+style = QPalette()
+style.setColor(QPalette.Window, QColor(53, 53, 53))
+style.setColor(QPalette.Background, QColor(53, 53, 53))
+style.setColor(QPalette.WindowText, Qt.red)
+style.setColor(QPalette.Base, QColor(25, 25, 25))
+style.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+style.setColor(QPalette.ToolTipBase, Qt.black)
+style.setColor(QPalette.ToolTipText, Qt.white)
+style.setColor(QPalette.Text, Qt.red)
+style.setColor(QPalette.Button, QColor(53, 53, 53))
+style.setColor(QPalette.ButtonText, QColor(42, 42, 42))
+style.setColor(QPalette.BrightText, Qt.red)
+style.setColor(QPalette.Link, QColor(42, 130, 218))
+style.setColor(QPalette.Highlight, QColor(42, 130, 218))
+style.setColor(QPalette.HighlightedText, Qt.black)
+style.setColor(QPalette.Light, QColor(53, 53, 53))
+app.setPalette(style)
+
+sys.exit(app.exec_())

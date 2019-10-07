@@ -15,7 +15,8 @@ class PageManager(QWidget):
 
         options = Options()
         options.headless = True
-        self.driver = webdriver.Chrome(options=options, executable_path='./chromedriver_77')
+        driver_path = os.environ['chrome_driver'] if hasattr(os.environ, 'chrome_driver') else '../chromedriver_77'
+        self.driver = webdriver.Chrome(options=options, executable_path=driver_path)
         self.driver.set_window_size(IMAGE_WIDTH, IMAGE_HEIGHT)
 
         self.tabPages = []
@@ -24,7 +25,7 @@ class PageManager(QWidget):
         self.openTabPage = DropSiteWindow(1, self.driver)
         self.tabPages.append(self.openTabPage)
         self.currentPage = 1
-        
+
         self.mainLayout = QVBoxLayout()
         self.mainLayout.addWidget(self.openTabPage)
         self.mainLayout.setContentsMargins(0, 0, 0, 0)
