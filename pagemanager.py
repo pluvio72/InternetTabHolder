@@ -17,6 +17,7 @@ class PageManager(QWidget):
         options.headless = True
 
         driver_path = os.environ['chrome_driver']
+        self.writeLog(driver_path)
 
         self.driver = webdriver.Chrome(options=options, executable_path=driver_path)
         self.driver.set_window_size(IMAGE_WIDTH, IMAGE_HEIGHT)
@@ -79,3 +80,10 @@ class PageManager(QWidget):
     # SEND UPDATE TITLE SIGNAL TO PARENT WINDOW
     def updateTitle(self):
         self.changeWindowTitle.emit(self.openTabPage.pageName)
+
+    
+
+
+    def writeLog(self, text):
+        with open('mylog.txt', 'a') as f:
+            f.write(text)

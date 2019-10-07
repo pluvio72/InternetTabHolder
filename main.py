@@ -18,6 +18,7 @@ os.chdir('_data')
 driver_path = 'chromedriver_mac_77' if sys.platform == 'darwin' else 'chromedriver_win32_77'
 if not os.path.isfile(os.path.join(os.getcwd(), '../'+driver_path)): os.environ['chrome_driver'] = os.path.abspath(os.path.join(os.getcwd(), '../../../../../'+driver_path))
 else: os.environ['chrome_driver'] = os.path.abspath('../'+driver_path)
+writeLog(driver_path)
 
 class MainWindow(QMainWindow):
     def __init__(self, centralWidget, *args, **kwargs):
@@ -143,6 +144,9 @@ class MainWindow(QMainWindow):
 ######
 if os.path.isfile('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt'):
     os.remove('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt')
+def writeLog(text):
+    with open('mylog.txt', 'a') as f:
+        f.write(text)
 ######
 ######
 ######
