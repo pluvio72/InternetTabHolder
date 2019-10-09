@@ -6,4 +6,5 @@
 
 ### Build:
  - pip install pyinstaller
- - pyinstaller --onefile --onedir --windowed --name='InternetTabHolder' --clean main.py
+ (MacOS)
+ - pyinstaller --onefile -y --windowed --name='InternetTabHolder' --icon resources/app.icns --clean main.py
