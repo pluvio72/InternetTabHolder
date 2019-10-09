@@ -1,15 +1,17 @@
 from PyQt5.QtWidgets import QMainWindow, QAction, QDialog, QVBoxLayout, QPushButton, QLineEdit, QApplication, qApp
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPalette, QColor, QIcon
-from pagemanager import PageManager
-from dropsitewindow import DropSiteWindow
 from tabsettings import MIN_TAB_WIDTH, MIN_TAB_HEIGHT, WINDOW_NAME
+from PyQt5.QtGui import QPalette, QColor, QIcon
+from dropsitewindow import DropSiteWindow
+from pagemanager import PageManager
+from PyQt5.QtCore import Qt
 import sys
 import os
 
 # SET CURRENT WORKING DIRECTORY
-current_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-os.chdir(current_dir)
+#current_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+if not os.path.isfile('chromedriver_mac_77') and not os.path.isfile('chromedriver_win32_77'):
+    current_dir = os.path.dirname(sys.executable)
+    os.chdir(current_dir)
 if not os.path.exists(os.path.join(os.getcwd(), '_data')):
     os.mkdir(os.path.join(os.getcwd(), '_data'))
 os.chdir('_data')
@@ -18,7 +20,6 @@ os.chdir('_data')
 driver_path = 'chromedriver_mac_77' if sys.platform == 'darwin' else 'chromedriver_win32_77'
 if not os.path.isfile(os.path.join(os.getcwd(), '../'+driver_path)): os.environ['chrome_driver'] = os.path.abspath(os.path.join(os.getcwd(), '../../../../../'+driver_path))
 else: os.environ['chrome_driver'] = os.path.abspath('../'+driver_path)
-writeLog(driver_path)
 
 class MainWindow(QMainWindow):
     def __init__(self, centralWidget, *args, **kwargs):
@@ -138,18 +139,6 @@ class MainWindow(QMainWindow):
         self.centralWidget.driver.close()
         self.centralWidget.driver.quit()
         qApp.quit()
-
-######
-######
-######
-if os.path.isfile('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt'):
-    os.remove('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt')
-def writeLog(text):
-    with open('mylog.txt', 'a') as f:
-        f.write(text)
-######
-######
-######
 
 app = QApplication([])
 
