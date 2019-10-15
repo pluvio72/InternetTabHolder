@@ -23,7 +23,7 @@ if platform == 'darwin' or platform == 'win32':
         subprocess.call('C:\Windows\System32\powershell.exe Expand-Archive -Force zip_file.zip ' + file_name)
         subprocess.call('icacls ' + file_name + ' /grant ' + user + ':(rx)')
     elif platform == 'darwin':
-        os.system('unzip zip_file.zip && rm zip_file.zip && mv chromedriver.exe ' + file_name)
+        os.system('unzip zip_file.zip && rm zip_file.zip && mv chromedriver ' + file_name)
         os.system('chmod +x ' + file_name)
 else:
     print('Platform not supported:::')
