@@ -6,4 +6,4 @@
 
 ### Build:
  - pip install pyinstaller
- - pyinstaller --onefile --clean -y --windowed --name='InternetTabHolder' -i resources/app.icns main.py (MacOS)
+ - pyinstaller --clean -y --windowed --onefile --name='InternetTabHolder' --add-data 'chromedriver_mac_77:.' -i resources/app.icns main.py 
