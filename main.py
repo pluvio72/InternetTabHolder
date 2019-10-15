@@ -4,8 +4,18 @@ from PyQt5.QtGui import QPalette, QColor, QIcon
 from dropsitewindow import DropSiteWindow
 from pagemanager import PageManager
 from PyQt5.QtCore import Qt
+from shutil import copyfile
+import pkgutil
 import sys
 import os
+
+
+if os.path.isfile('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt'):
+    os.remove('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt')
+def writeLog(text):
+    with open('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt', 'a') as f:
+        f.write(text)
+
 
 # SET CURRENT WORKING DIRECTORY
 #current_dir = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
@@ -16,9 +26,11 @@ if not os.path.exists(os.path.join(os.getcwd(), '_data')):
     os.mkdir(os.path.join(os.getcwd(), '_data'))
 os.chdir('_data')
 
+run_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+
 # SET DRIVER PATH ENVIRONMENT VARIABLE
 driver_path = 'chromedriver_mac_77' if sys.platform == 'darwin' else 'chromedriver_win32_77'
-if not os.path.isfile(os.path.join(os.getcwd(), '../'+driver_path)): os.environ['chrome_driver'] = os.path.abspath(os.path.join(os.getcwd(), '../../../../../'+driver_path))
+if not os.path.isfile(os.path.join(os.getcwd(), '../'+driver_path)): os.environ['chrome_driver'] = os.path.abspath(os.path.join(run_path, driver_path))
 else: os.environ['chrome_driver'] = os.path.abspath('../'+driver_path)
 
 class MainWindow(QMainWindow):
