@@ -18,18 +18,12 @@ if platform == 'darwin' or platform == 'win32':
     with requests.get(chosen_url, stream=True) as download_stream:
         with open('zip_file.zip', 'wb') as file_stream:
             shutil.copyfileobj(download_stream.raw, file_stream)
-    
+    # EXTRACT DRIVER FROM ZIP
     with zipfile.ZipFile('zip_file.zip', 'r') as z:
         z.extractall('./')
-
-    if platform == 'win32':
-        user = getpass.getuser()
-        os.system('del zip_file.zip')
-        os.system('mv chromedriver.exe ' + file_name)
-        #os.system('icacls ' + file_name + ' /grant ' + user + ':(rx)')
-    elif platform == 'darwin':
-        os.system('rm zip_file.zip && mv chromedriver ' + file_name)
-        #os.system('chmod +x ' + file_name)
+    os.remove('zip_file.zip')
+    if platform == 'win32': os.rename('chromedriver.exe', file_name)
+    elif platform == 'darwin': os.rename('chromedriver', file_name)
     os.chmod(file_name, 0o777)
 else:
     print('Platform not supported:::')
