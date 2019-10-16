@@ -26,10 +26,11 @@ if platform == 'darwin' or platform == 'win32':
         user = getpass.getuser()
         os.system('del zip_file.zip')
         os.system('mv chromedriver.exe ' + file_name)
-        os.system('icacls ' + file_name + ' /grant ' + user + ':(rx)')
+        #os.system('icacls ' + file_name + ' /grant ' + user + ':(rx)')
     elif platform == 'darwin':
         os.system('rm zip_file.zip && mv chromedriver ' + file_name)
-        os.system('chmod +x ' + file_name)
+        #os.system('chmod +x ' + file_name)
+    os.chmod(file_name, 0o777)
 else:
     print('Platform not supported:::')
     sys.exit(0)
