@@ -1,6 +1,7 @@
 import subprocess
 import requests
 import getpass
+import zipfile
 import shutil
 import sys
 import os
@@ -18,12 +19,16 @@ if platform == 'darwin' or platform == 'win32':
         with open('zip_file.zip', 'wb') as file_stream:
             shutil.copyfileobj(download_stream.raw, file_stream)
     
+    with zipfile.ZipFile('zip_file.zip', 'r') as z:
+        z.extractall('./')
+
     if platform == 'win32':
         user = getpass.getuser()
-        subprocess.call('C:\Windows\System32\powershell.exe Expand-Archive -Force zip_file.zip ' + file_name)
-        subprocess.call('icacls ' + file_name + ' /grant ' + user + ':(rx)')
+        os.system('del zip_file.zip')
+        os.system('mv chromedriver.exe ' + file_name)
+        os.system('icacls ' + file_name + ' /grant ' + user + ':(rx)')
     elif platform == 'darwin':
-        os.system('unzip zip_file.zip && rm zip_file.zip && mv chromedriver ' + file_name)
+        os.system('rm zip_file.zip && mv chromedriver ' + file_name)
         os.system('chmod +x ' + file_name)
 else:
     print('Platform not supported:::')
