@@ -45,11 +45,12 @@ class AddTabDialog(QDialog):
         self.tab.addCloseButton()
         self.tab.setTaken(url)
         self.tab.defaultTab('Loading...')
-
         duplicateTab = self.tab.checkDuplicateTab(url, self.tab.tabFileName)
         duplicateArchiveTab = self.tab.checkDuplicateTab(url, self.tab.archiveTabFileName)
-        if duplicateTab: self.tab.setDuplicateTab(url)
-        elif duplicateArchiveTab: self.tab.setDuplicateArchiveTab(url)
+        if duplicateTab or duplicateArchiveTab:
+            if duplicateTab: self.tab.setDuplicateTab(url)
+            elif duplicateArchiveTab: self.tab.setDuplicateArchiveTab(url)
+            self.tab.loadSave()
         else: 
             t = threading.Thread(target=self.tab.downloadImage, args=(url, True))
             t.start()

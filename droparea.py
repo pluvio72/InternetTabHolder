@@ -56,7 +56,7 @@ class DropArea(QLabel):
     
     # ON MOUSE LEAVE
     def leaveEvent(self, event):
-        if not self.taken: self.setBackgroundRole(QPalette.Dark)
+        if not self.taken: self.setBackgroundRole(QPalette.Light)
         else: self.button.setVisible(False)
 
     def areaClicked(self, event):
@@ -125,7 +125,7 @@ class DropArea(QLabel):
             if duplicateTab or duplicateArchiveTab:
                 if duplicateTab: self.setDuplicateTab(self.url)
                 elif duplicateArchiveTab: self.setDuplicateArchiveTab(self.url)
-                self.finishTab()
+                self.loadSave()
             else:
                 t = threading.Thread(target=self.downloadImage, args=(self.url,True))
                 t.start()
@@ -133,7 +133,7 @@ class DropArea(QLabel):
             self.taken = True
             event.acceptProposedAction()
     
-    def finishTab(self):
+    def loadSave(self):
         self.setLocalPixmap()
         self.saveTab()
         self.tabAdded.emit(self, self.tabNumber)
@@ -170,7 +170,7 @@ class DropArea(QLabel):
     def load(self, url, imagePath):
         self.taken = True
         self.url = url
-        ### BUG: WHEN LOADING ARCHIVED TAB FROM MANUAL ADD
+
         setImagePath = False
         if self.checkFileExists(self.archiveTabFileName):
             with open(self.archiveTabFileName, 'r') as f:
@@ -195,7 +195,7 @@ class DropArea(QLabel):
         self.driver.save_screenshot(path)
         self._pixmap = QPixmap(path, '1')
         if callback:
-            self.finishTab()
+            self.loadSave()
     
     # SET PIXMAP FROM _PIXMAP
     def setLocalPixmap(self):
@@ -234,6 +234,9 @@ class DropArea(QLabel):
             for line in f:
                 if url == line.split(' ')[0]:
                     imagePath = line.split('\n')[0].split(' ')[1]
+                    print('Image Path: ' + imagePath)
+                    print('From Path: ' + str(os.path.join(self.imageFolder, imagePath)))
+                    print('To Path: ' + str(os.path.join(self.imageFolder, imagePath[1:])))
                     # RENAME IMAGE TO MAKE IT NOT HIDDEN
                     os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
                     self.imagePath = imagePath[1:]
@@ -256,7 +259,7 @@ class DropArea(QLabel):
     ### QUICK METHODS TO SET TAB STYLING
     def defaultTab(self, text):
         self.setText(text)
-        self.setBackgroundRole(QPalette.Dark)
+        self.setBackgroundRole(QPalette.Light)
     
     def highlightTab(self):
         self.setBackgroundRole(QPalette.Mid)
