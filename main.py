@@ -40,13 +40,14 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Internet Tab Holder') 
         self.setCentralWidget(centralWidget)
         self.setMouseTracking(True)
+        self.stayTop = True
 
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.centralWidget = centralWidget
         self.centralWidget.changeWindowTitle.connect(self.changeTitle)
         self.createMenu()
 
-        #self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
     # CREATE ALL MENU BUTTONS -> SET SHORTCUTS -> CONNECT SIGNALS/SLOTS
     def createMenu(self):
@@ -77,6 +78,11 @@ class MainWindow(QMainWindow):
         clearAction.setShortcut("Ctrl+Shift+W")
         clearAction.triggered.connect(self.centralWidget.openTabPage.clear)
         file.addAction(clearAction)
+
+        stayTopAction = QAction("Stay On Top", self)
+        stayTopAction.setShortcut("Ctrl+Shift+A")
+        stayTopAction.triggered.connect(self.stayTopToggle)
+        file.addAction(stayTopAction)
 
         self.changeTabMenu = file.addMenu("Tabs Per Row")
         self.tabsPerRowList = []
@@ -126,6 +132,11 @@ class MainWindow(QMainWindow):
         layout.addWidget(QPushButton("Help"))
         dialog.setLayout(layout)
         dialog.exec_()
+    
+    # CHANGE WHETHER WINDOW STAYS ON TOP
+    def stayTopToggle(self):
+        self.setWindowFlags(self.windowFlags() ^ Qt.WindowStaysOnTopHint)
+        self.show()
 
     # CMD+R OPENS DIALOG WITH TEXT EDIT WHICH RENAMES TAG PAGE VARIABLE -> RENAMES WINDOW -> UPDATES ENTRY IN PAGENAMES FILE
     def openRenameDialog(self):
