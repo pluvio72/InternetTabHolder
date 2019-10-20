@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         self.centralWidget.changeWindowTitle.connect(self.changeTitle)
         self.createMenu()
 
-        #self.setWindowFlags(Qt.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
 
     # CREATE ALL MENU BUTTONS -> SET SHORTCUTS -> CONNECT SIGNALS/SLOTS
     def createMenu(self):

@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QLabel, QFrame, QPushButton, QGraphicsOpacityEffect, QWidget, QSizePolicy
 from PyQt5.QtGui import QPalette, QPixmap, QDesktopServices
-from PyQt5.QtCore import pyqtSignal, QSize, Qt
+from PyQt5.QtCore import pyqtSignal, QSize, Qt, QThread, QObject, QUrl
 from addtabdialog import AddTabDialog
+import threading
 import os
 
 MIN_FOR_CLOSE = 100
@@ -116,19 +117,26 @@ class DropArea(QLabel):
     def dropEvent(self, event):
         if not self.taken:
             self.defaultTab('Loading...')
-            self.taken = True
+            self.addCloseButton()
             self.url = event.mimeData().text()
 
             duplicateTab = self.checkDuplicateTab(self.url, self.tabFileName)
             duplicateArchiveTab = self.checkDuplicateTab(self.url, self.archiveTabFileName)
-            if duplicateTab: self.setDuplicateTab(self.url)
-            elif duplicateArchiveTab: self.setDuplicateArchiveTab(self.url)
-            else: self.downloadImage(self.url)
-            self.setLocalPixmap()
-            self.saveTab()
-            self.tabAdded.emit(self, self.tabNumber)
-            self.addCloseButton()
+            if duplicateTab or duplicateArchiveTab:
+                if duplicateTab: self.setDuplicateTab(self.url)
+                elif duplicateArchiveTab: self.setDuplicateArchiveTab(self.url)
+                self.finishTab()
+            else:
+                t = threading.Thread(target=self.downloadImage, args=(self.url,True))
+                t.start()
+
+            self.taken = True
             event.acceptProposedAction()
+    
+    def finishTab(self):
+        self.setLocalPixmap()
+        self.saveTab()
+        self.tabAdded.emit(self, self.tabNumber)
     
     # ON RESIZE UPDATE PIXMAP SIZE
     def resizeEvent(self, e):
@@ -180,12 +188,14 @@ class DropArea(QLabel):
         self.addCloseButton()
 
     # DOWNLOAD IMAGE FROM DRIVER
-    def downloadImage(self, url):
+    def downloadImage(self, url, callback=False):
         self.imagePath = str(url).replace('/', '') + '.png'
         self.driver.get(url)
         path = os.path.join(self.imageFolder, self.imagePath)
         self.driver.save_screenshot(path)
         self._pixmap = QPixmap(path, '1')
+        if callback:
+            self.finishTab()
     
     # SET PIXMAP FROM _PIXMAP
     def setLocalPixmap(self):
@@ -251,3 +261,23 @@ class DropArea(QLabel):
     def highlightTab(self):
         self.setBackgroundRole(QPalette.Mid)
         self.setText('Drop Here')
+
+class DownloadThread(QThread):
+    def __init__(self, tab, driver, callback, url, imageFolder):
+        QThread.__init__(self)
+        self.tab = tab
+        self.driver = driver    
+        self.callback = callback
+        self.url = url
+        self.imageFolder = imageFolder
+    
+    def __del__(self):
+        pass
+
+    def run(self):
+        self.tab.imagePath = str(self.url).replace('/', '') + '.png'
+        self.driver.get(self.url)
+        path = os.path.join(self.imageFolder, self.tab.imagePath)
+        self.driver.save_screenshot(path)
+        self.tab._pixmap = QPixmap(path, '1')
+        self.callback()
