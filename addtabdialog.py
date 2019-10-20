@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QLineEdit, QListWidget, QListWidgetItem, QSizePolicy, QFrame
 from PyQt5.QtCore import Qt
+import threading
 import os
 
 class AddTabDialog(QDialog):
@@ -41,16 +42,16 @@ class AddTabDialog(QDialog):
     def addUrl(self):
         url = self.textEdit.text()
         imagePath = url.replace('/', '') + '.png'
+        self.tab.addCloseButton()
+        self.tab.setTaken(url)
+        self.tab.defaultTab('Loading...')
 
         duplicateTab = self.tab.checkDuplicateTab(url, self.tab.tabFileName)
         duplicateArchiveTab = self.tab.checkDuplicateTab(url, self.tab.archiveTabFileName)
         if duplicateTab: self.tab.setDuplicateTab(url)
         elif duplicateArchiveTab: self.tab.setDuplicateArchiveTab(url)
-        else: self.tab.downloadImage(url)
+        else: 
+            t = threading.Thread(target=self.tab.downloadImage, args=(url, True))
+            t.start()
 
-        self.tab.setTaken(url)
-        self.tab.setLocalPixmap()
-        self.tab.saveTab()
-        self.tab.tabAdded.emit(self.tab, self.tab.tabNumber)
-        self.tab.addCloseButton()
         self.deleteLater()
