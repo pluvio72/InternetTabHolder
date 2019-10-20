@@ -1,6 +1,6 @@
 import os
 
-WINDOW_NAME = 'Internet Tab Holder '
+WINDOW_NAME = 'Internet Tab Holder - '
 
 TABS_FILE_NAME = 'tabs_1.txt'
 ARCHIVED_TABS_FILE_NAME = '.tabs_1.txt'
