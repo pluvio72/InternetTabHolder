@@ -145,7 +145,7 @@ class DropSiteWindow(QWidget):
 
     # ARCHIVE TAB IN ARCHIVE TAB FILE NAME OF CURRENT PAGE -> RENAME IMAGE TO .IMAGE IF ITS AVAILABLE
     def archiveTab(self, url, imagePath):
-        try: os.rename(os.path.join(tabsettings.IMAGE_FOLDER_PATH, imagePath), os.path.join(tabsettings.IMAGE_FOLDER_PATH, '.'+imagePath))
+        try: os.rename(os.path.normpath(os.path.join(tabsettings.IMAGE_FOLDER_PATH, imagePath)), os.path.normpath(os.path.join(tabsettings.IMAGE_FOLDER_PATH, '.'+imagePath)))
         except FileNotFoundError: pass
 
         with open(self.archiveTabFileName, 'a+') as f:
