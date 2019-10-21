@@ -1,9 +1,12 @@
-from PyQt5.QtWidgets import QLabel, QFrame, QPushButton, QGraphicsOpacityEffect, QWidget, QSizePolicy
-from PyQt5.QtGui import QPalette, QPixmap, QDesktopServices
-from PyQt5.QtCore import pyqtSignal, QSize, Qt, QThread, QObject, QUrl
-from addtabdialog import AddTabDialog
-import threading
 import os
+import threading
+
+from PyQt5.QtCore import QObject, QSize, Qt, QThread, QUrl, pyqtSignal
+from PyQt5.QtGui import QDesktopServices, QPalette, QPixmap
+from PyQt5.QtWidgets import (QFrame, QGraphicsOpacityEffect, QLabel,
+                             QPushButton, QSizePolicy, QWidget)
+
+from addtabdialog import AddTabDialog
 
 MIN_FOR_CLOSE = 100
 

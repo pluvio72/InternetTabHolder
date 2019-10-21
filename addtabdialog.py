@@ -35,6 +35,7 @@ class AddTabDialog(QDialog):
         self.layout.addWidget(self.button)
 
         self.setWindowModality(Qt.ApplicationModal)
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
         self.setWindowTitle("Add URL Manually")
         self.setLayout(self.layout)
         self.exec_()

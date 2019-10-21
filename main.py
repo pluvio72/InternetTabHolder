@@ -1,14 +1,18 @@
-from PyQt5.QtWidgets import QMainWindow, QAction, QDialog, QVBoxLayout, QPushButton, QLineEdit, QApplication, qApp
-from tabsettings import MIN_TAB_WIDTH, MIN_TAB_HEIGHT, WINDOW_NAME
-from PyQt5.QtGui import QPalette, QColor, QIcon
-from dropsitewindow import DropSiteWindow
-from pagemanager import PageManager
-from PyQt5.QtCore import Qt
-from shutil import copyfile
+import os
 import pkgutil
 import sys
-import os
+from shutil import copyfile
 
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QColor, QIcon, QPalette
+from PyQt5.QtWidgets import (QAction, QApplication, QColorDialog, QDialog,
+                             QFrame, QHBoxLayout, QLabel, QLineEdit,
+                             QMainWindow, QPushButton, QVBoxLayout, qApp,
+                             QSizePolicy, QLayout)
+
+from dropsitewindow import DropSiteWindow
+from pagemanager import PageManager
+from tabsettings import MIN_TAB_HEIGHT, MIN_TAB_WIDTH, WINDOW_NAME
 
 if os.path.isfile('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt'):
     os.remove('/Users/maksie/Documents/Coding/Python/Projects/PyChromeTabs/mylog.txt')
@@ -40,7 +44,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Internet Tab Holder') 
         self.setCentralWidget(centralWidget)
         self.setMouseTracking(True)
-        self.stayTop = True
 
         self.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.centralWidget = centralWidget
@@ -79,11 +82,6 @@ class MainWindow(QMainWindow):
         clearAction.triggered.connect(self.centralWidget.openTabPage.clear)
         file.addAction(clearAction)
 
-        stayTopAction = QAction("Stay On Top", self)
-        stayTopAction.setShortcut("Ctrl+Shift+A")
-        stayTopAction.triggered.connect(self.stayTopToggle)
-        file.addAction(stayTopAction)
-
         self.changeTabMenu = file.addMenu("Tabs Per Row")
         self.tabsPerRowList = []
         a1 = QAction("3 Tabs", self)
@@ -107,16 +105,78 @@ class MainWindow(QMainWindow):
         self.tabsPerRowList[1].triggered.connect(lambda: self.changedTabsPerRow(1))
         self.tabsPerRowList[2].triggered.connect(lambda: self.changedTabsPerRow(2))
 
-        helpAction = QAction("Help", self)
-        helpAction.setShortcut("Ctrl+Shift+H")
-        helpAction.triggered.connect(self.showHelp)
-        file.addAction(helpAction)
+        self.stayTopAction = QAction("Stay On Top", self)
+        self.stayTopAction.setShortcut("Ctrl+Shift+A")
+        self.stayTopAction.setCheckable(True)
+        self.stayTopAction.setChecked(True)
+        self.stayTopActionChecked = True
+        self.stayTopAction.triggered.connect(self.stayTopToggle)
+        file.addAction(self.stayTopAction)
+
+        themeMenuAction = QAction("Theme", self)
+        themeMenuAction.setShortcut("Ctrl+T")
+        themeMenuAction.triggered.connect(self.openThemeMenu)
+        file.addAction(themeMenuAction)
+
+        #helpAction = QAction("Help", self)
+        #helpAction.setShortcut("Ctrl+Shift+H")
+        #helpAction.triggered.connect(self.showHelp)
+        #file.addAction(helpAction)
 
         quitAction = QAction("&Close", self)
         quitAction.setShortcut("Ctrl+Q")
         quitAction.triggered.connect(self.close)
         file.addAction(quitAction)
     
+    # OPEN THEME MENU
+    def openThemeMenu(self):
+        dialog = QDialog()
+        mainLayout = QHBoxLayout()
+        subLayout = QVBoxLayout()
+        subLayout2 = QVBoxLayout()
+        dialog.setLayout(mainLayout)
+        mainLayout.addLayout(subLayout)
+        mainLayout.addLayout(subLayout2)
+
+        def addColorItem(colorString, string, layout):
+            subsub = QHBoxLayout()
+            label = QLabel('')
+            label.setAutoFillBackground(True)
+            label.setMinimumWidth(55)
+            label.setStyleSheet('QLabel { background-color: ' + colorString + '; }')
+            label.setFrameStyle(QFrame.Panel)
+            label.mouseDoubleClickEvent.connect(lambda: print('double clicked'))
+            textLabel = QLabel(string)
+            textLabel.setMinimumWidth(100)
+            subsub.addWidget(label)
+            subsub.addWidget(textLabel)
+            subsub.setSizeConstraint(QLayout.SetMaximumSize)
+            if layout == 1: subLayout.addLayout(subsub)
+            else: subLayout2.addLayout(subsub)
+
+        subLayout.setContentsMargins(20, 20, 20, 20)
+        subLayout2.setContentsMargins(20, 20, 20, 20)
+
+        prefix = 'rgba'
+        addColorItem(prefix+str(self.palette().text().color().getRgb()), 'Text', 1)
+        #addColorItem(prefix+str(self.palette().background().color().getRgb()), 'Background', 1)
+        addColorItem(prefix+str(self.palette().window().color().getRgb()), 'Window', 1)
+        addColorItem(prefix+str(self.palette().windowText().color().getRgb()), 'Window Text', 1)
+        addColorItem(prefix+str(self.palette().highlight().color().getRgb()), 'Highlight', 1)
+        addColorItem(prefix+str(self.palette().brightText().color().getRgb()), 'Bright Text', 1)
+        addColorItem(prefix+str(self.palette().button().color().getRgb()), 'Button', 1)
+        addColorItem(prefix+str(self.palette().buttonText().color().getRgb()), 'Button Text', 1)
+
+        addColorItem(prefix+str(self.palette().light().color().getRgb()), 'Light', 2)
+        addColorItem(prefix+str(self.palette().highlightedText().color().getRgb()), 'Highlighted Text', 2)
+        addColorItem(prefix+str(self.palette().link().color().getRgb()), 'Link', 2)
+        addColorItem(prefix+str(self.palette().base().color().getRgb()), 'Base', 2)
+        addColorItem(prefix+str(self.palette().alternateBase().color().getRgb()), 'Alternate Base', 2)
+        addColorItem(prefix+str(self.palette().toolTipText().color().getRgb()), 'TooltipText', 2)
+        addColorItem(prefix+str(self.palette().toolTipBase().color().getRgb()), 'TooltipBase', 2)
+
+        dialog.exec_()
+
     # SET ALL OTHER TAB NUMBER OPTIONS TO UNCHECKED -> CHANGE TABS PER ROW ON CURRENT PAGE
     def changedTabsPerRow(self, ind):
         for i in range(len(self.tabsPerRowList)):
@@ -131,10 +191,12 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         layout.addWidget(QPushButton("Help"))
         dialog.setLayout(layout)
-        dialog.exec_()
+        dialog.exec_() 
     
     # CHANGE WHETHER WINDOW STAYS ON TOP
     def stayTopToggle(self):
+        self.stayTopActionChecked = not self.stayTopActionChecked
+        self.stayTopAction.setChecked(self.stayTopActionChecked)
         self.setWindowFlags(self.windowFlags() ^ Qt.WindowStaysOnTopHint)
         self.show()
 
