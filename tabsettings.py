@@ -22,7 +22,7 @@ def tabFileName(tab):
     return str(tab.pageNumber) + '.txt'
 
 def archiveTabFileName(tab):
-    return '.' + str(tab.pageNumber) + '.txt'
+    return '_' + str(tab.pageNumber) + '.txt'
 
 class TabSettings():
     def __init__(self):

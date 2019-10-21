@@ -146,9 +146,7 @@ class DropSiteWindow(QWidget):
     # ARCHIVE TAB IN ARCHIVE TAB FILE NAME OF CURRENT PAGE -> RENAME IMAGE TO .IMAGE IF ITS AVAILABLE
     def archiveTab(self, url, imagePath):
         try: 
-            print(os.path.isfile(os.path.normpath(os.path.join(tabsettings.IMAGE_FOLDER_PATH, imagePath))))
-            print(os.path.isfile(os.path.normpath(os.path.join(tabsettings.IMAGE_FOLDER_PATH, '.'+imagePath))))
-            os.rename(os.path.normpath(os.path.join(tabsettings.IMAGE_FOLDER_PATH, imagePath)), os.path.normpath(os.path.join(tabsettings.IMAGE_FOLDER_PATH, '.'+imagePath)))
+            os.rename(os.path.normpath(os.path.join(tabsettings.IMAGE_FOLDER_PATH, imagePath)), os.path.normpath(os.path.join(tabsettings.IMAGE_FOLDER_PATH, '_'+imagePath)))
         except FileNotFoundError: pass
 
         with open(self.archiveTabFileName, 'a+') as f:
@@ -158,7 +156,7 @@ class DropSiteWindow(QWidget):
             for line in lines:
                 if line.split(' ')[0] == url:
                     duplicate = True
-            if not duplicate: f.write(url + ' ' + '.' + imagePath + '\n')
+            if not duplicate: f.write(url + ' ' + '_' + imagePath + '\n')
 
     # ADD TAB TO TABLIST -> IF NUMBER GREATER THEN LIST SIZE -> APPEND -> ELSE REPLACE TAB IN LIST
     def addTabToList(self, tab, tabNum):
