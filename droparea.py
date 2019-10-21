@@ -237,9 +237,6 @@ class DropArea(QLabel):
             for line in f:
                 if url == line.split(' ')[0]:
                     imagePath = line.split('\n')[0].split(' ')[1]
-                    print('Image Path: ' + imagePath)
-                    print('From Path: ' + str(os.path.join(self.imageFolder, imagePath)))
-                    print('To Path: ' + str(os.path.join(self.imageFolder, imagePath[1:])))
                     # RENAME IMAGE TO MAKE IT NOT HIDDEN
                     os.rename(os.path.join(self.imageFolder, imagePath), os.path.join(self.imageFolder, imagePath[1:]))
                     self.imagePath = imagePath[1:]
