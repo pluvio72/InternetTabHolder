@@ -135,6 +135,7 @@ class MainWindow(QMainWindow):
         subLayout = QVBoxLayout()
         subLayout2 = QVBoxLayout()
         dialog.setLayout(mainLayout)
+        dialog.setWindowFlags(Qt.WindowStaysOnTopHint)
         mainLayout.addLayout(subLayout)
         mainLayout.addLayout(subLayout2)
 
@@ -213,6 +214,7 @@ class MainWindow(QMainWindow):
 
         textEdit.returnPressed.connect(enterPressed)
         layout.addWidget(textEdit)
+        dialog.setWindowFlags(Qt.WindowStaysOnTopHint)
         dialog.setLayout(layout)
         dialog.exec_()
 
