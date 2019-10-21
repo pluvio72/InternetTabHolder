@@ -146,7 +146,7 @@ class MainWindow(QMainWindow):
             label.setMinimumWidth(55)
             label.setStyleSheet('QLabel { background-color: ' + colorString + '; }')
             label.setFrameStyle(QFrame.Panel)
-            label.mouseDoubleClickEvent.connect(lambda: print('double clicked'))
+            #label.mouseDoubleClickEvent.connect(lambda: print('double clicked'))
             textLabel = QLabel(string)
             textLabel.setMinimumWidth(100)
             subsub.addWidget(label)
