@@ -192,7 +192,7 @@ class DropArea(QLabel):
 
     # DOWNLOAD IMAGE FROM DRIVER
     def downloadImage(self, url, callback=False):
-        self.imagePath = str(url).replace('/', '') + '.png'
+        self.imagePath = str(url).replace('/', '').replace(':', '') + '.png'
         self.driver.get(url)
         path = os.path.join(self.imageFolder, self.imagePath)
         self.driver.save_screenshot(path)
