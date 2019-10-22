@@ -15,6 +15,7 @@ class PageManager(QWidget):
 
         options = Options()
         options.headless = True
+        options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
         driver_path = os.environ['chrome_driver']
 
