@@ -1,6 +1,7 @@
 import os
 
 WINDOW_NAME = 'Internet Tab Holder - '
+SETTINGS_FILE_NAME = 'settings.json'
 
 TABS_FILE_NAME = 'tabs_1.txt'
 ARCHIVED_TABS_FILE_NAME = '.tabs_1.txt'
